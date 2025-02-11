@@ -12,6 +12,7 @@
     "@gluestack-ui/nativewind-utils": "^1.0.26",
     "@gluestack-ui/overlay": "^0.1.16",
     "@gluestack-ui/toast": "^1.0.8",
+    "@react-native-picker/picker": "^2.11.0",
     "@react-navigation/native": "^7.0.14",
     "babel-plugin-module-resolver": "^5.0.2",
     "expo": "~52.0.23",
@@ -25,10 +26,12 @@
     "react": "18.3.1",
     "react-native": "0.76.5",
     "react-native-css-interop": "^0.1.22",
+    "react-native-picker-select": "^9.3.1",
     "react-native-reanimated": "^3.16.6",
     "react-native-safe-area-context": "^5.0.0",
     "react-native-screens": "~4.4.0",
     "react-native-svg": "^15.2.0",
+    "react-native-vector-icons": "^10.2.0",
     "tailwindcss": "^3.4.17"
   },
   "devDependencies": {

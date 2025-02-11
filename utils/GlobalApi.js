@@ -85,6 +85,30 @@ const getKoisByCategory = async (category) => {
   return result;
 }
 
+const getKoisByBreeder = async (breeder) => {
+    const query = gql`
+    query GetKoi {
+            kois(where: {breeder: "`+breeder+`"}) {
+                id
+                name
+                sex
+                description
+                size
+                price
+                breeder
+                image {
+                    url
+                }
+                category{
+                name
+                }
+            }
+    }
+  `
+  const result = await request(Master_URL, query);
+  return result;
+}
+
 const getKoisById = async (id) => {
     const query = gql`
     query GetKoi {
@@ -114,5 +138,6 @@ export default {
     getCategories,
     getKois,
     getKoisByCategory,
-    getKoisById
+    getKoisById,
+    getKoisByBreeder
 }

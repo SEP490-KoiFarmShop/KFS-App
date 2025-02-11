@@ -1,6 +1,6 @@
-import { View, Text, Image, ScrollView } from 'react-native'
+import { View, Text, Image, ScrollView, TouchableOpacity } from 'react-native'
 import React, { useEffect, useState } from 'react'
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import GlobalApi from '@/utils/GlobalApi';
 
 interface Koi {
@@ -16,6 +16,7 @@ interface Koi {
 }
 
 export default function KoiDetailScreen() {
+    const router = useRouter();
     const { id } = useLocalSearchParams();
     const [koisById, setKoisById] = useState<Koi | null>(null);
     useEffect(() => {
@@ -59,7 +60,9 @@ export default function KoiDetailScreen() {
                 <Text className='text-gray-500 mt-5'>- {koisById.description}</Text>
                 <Text className='font-semibold text-xl mt-5'>Detail Information of {koisById.name} :</Text>
                 <Text className='font-black text-xl mt-2'>Source:</Text>
-                <Text className='text-blue-600 text-xl mt-1 font-medium'>{koisById.breeder}</Text>
+                <TouchableOpacity onPress={() => router.push(`/KoiByBreeder?breeder=${koisById.breeder}`)}>
+                    <Text className='text-blue-600 text-xl mt-1 font-medium'>{koisById.breeder}</Text>
+                </TouchableOpacity>
             </View>
         </View>
 

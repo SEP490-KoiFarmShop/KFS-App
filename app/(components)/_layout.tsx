@@ -2,7 +2,7 @@ import React from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
 
 const layout = () => {
-    const { category, koiname } = useLocalSearchParams();
+    const { category, koiname, breeder } = useLocalSearchParams();
     return (
         <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen
@@ -17,6 +17,13 @@ const layout = () => {
                 options={({ route }: any) => ({
                     headerShown: true,
                     title: route.params?.koiname || 'Detail',
+                })}
+            />
+            <Stack.Screen
+                name="KoiByBreeder"
+                options={({ route }: any) => ({
+                    headerShown: true,
+                    title: route.params?.breeder || 'Breeder',
                 })}
             />
         </Stack>

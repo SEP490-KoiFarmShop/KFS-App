@@ -1,33 +1,33 @@
-import { View, Text, FlatList, TouchableOpacity } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, ScrollView } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import GlobalApi from '@/utils/GlobalApi';
-import DetailKoiItem from '@/components/DetailKoiItem';
 import SearchComponent from '@/components/Search';
+import DetailKoiItem from '@/components/DetailKoiItem';
 
-export default function KoiByCategory() {
+export default function KoiByBreeder() {
     const router = useRouter();
-    const { category } = useLocalSearchParams();
-    const [koisByCategory, setKoisByCategory] = useState([]);
+    const { breeder } = useLocalSearchParams();
+    const [koisByBreeder, setKoisByBreeder] = useState([]);
     const numColumns = 2;
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await GlobalApi.getKoisByCategory(category);
-                setKoisByCategory(response?.kois || []);
+                const response = await GlobalApi.getKoisByBreeder(breeder);
+                setKoisByBreeder(response?.kois || []);
             } catch (error) {
                 console.error("Error fetching sliders:", error);
             }
         };
         fetchCategories();
-    }, [category]);
+    }, [breeder]);
     return (
         <View className="flex-1">
             <SearchComponent />
-            {koisByCategory.length > 0 ?
+            {koisByBreeder.length > 0 ?
                 <FlatList
                     key={`flatlist-${numColumns}`}
-                    data={koisByCategory}
+                    data={koisByBreeder}
                     numColumns={numColumns}
                     renderItem={({ item, index }: any) => {
                         return (
