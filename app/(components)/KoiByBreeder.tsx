@@ -23,14 +23,18 @@ export default function KoiByBreeder() {
     }, [breeder]);
     return (
         <View className="flex-1">
-            <SearchComponent />
+            {/* <ScrollView showsVerticalScrollIndicator={false}>
+                <SearchComponent />
+            </ScrollView> */}
             {koisByBreeder.length > 0 ?
                 <FlatList
                     key={`flatlist-${numColumns}`}
                     data={koisByBreeder}
                     numColumns={numColumns}
+                    ListHeaderComponent={<SearchComponent />}
                     renderItem={({ item, index }: any) => {
                         return (
+
                             <TouchableOpacity style={{ flex: 1, marginRight: 10 }} onPress={() => router.push(`/KoiDetailScreen?koiname=${item.name}&id=${item.id}`)}>
                                 <View>
                                     <DetailKoiItem koi={item} />

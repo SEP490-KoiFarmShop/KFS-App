@@ -9,6 +9,8 @@
     "web": "DARK_MODE=media expo start --web"
   },
   "dependencies": {
+    "@gluestack-ui/button": "^1.0.12",
+    "@gluestack-ui/icon": "^0.1.25",
     "@gluestack-ui/nativewind-utils": "^1.0.26",
     "@gluestack-ui/overlay": "^0.1.16",
     "@gluestack-ui/toast": "^1.0.8",
@@ -31,7 +33,6 @@
     "react-native-safe-area-context": "^5.0.0",
     "react-native-screens": "~4.4.0",
     "react-native-svg": "^15.2.0",
-    "react-native-vector-icons": "^10.2.0",
     "tailwindcss": "^3.4.17"
   },
   "devDependencies": {

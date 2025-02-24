@@ -23,12 +23,12 @@ export default function KoiByCategory() {
     }, [category]);
     return (
         <View className="flex-1">
-            <SearchComponent />
             {koisByCategory.length > 0 ?
                 <FlatList
                     key={`flatlist-${numColumns}`}
                     data={koisByCategory}
                     numColumns={numColumns}
+                    ListHeaderComponent={<SearchComponent />}
                     renderItem={({ item, index }: any) => {
                         return (
                             <TouchableOpacity style={{ flex: 1, marginRight: 10 }} onPress={() => router.push(`/KoiDetailScreen?koiname=${item.name}&id=${item.id}`)}>
