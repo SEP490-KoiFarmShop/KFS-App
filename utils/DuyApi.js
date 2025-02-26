@@ -10,6 +10,7 @@ const getAppUsers = async () => {
         id
         username
         email
+        password
         phoneNumber
         address
         loyaltyPoints
