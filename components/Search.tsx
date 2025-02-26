@@ -11,7 +11,6 @@ const SearchComponent = () => {
     const isLoading = false;
 
     const submit = async () => {
-        // console.log("siu")
     };
 
     return (
@@ -94,7 +93,7 @@ const SearchComponent = () => {
                 </View>
 
                 <View className="mb-4 ml-2 flex-1">
-                    <CustomButton title="Submit and Publish" handlePress={submit}
+                    <CustomButton title="Search" handlePress={submit}
                         containerStyles="mt-5 bg-orange-500 h-14"
                         isLoading={isLoading}
                     />

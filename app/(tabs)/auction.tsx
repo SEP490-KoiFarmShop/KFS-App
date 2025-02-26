@@ -10,5 +10,3 @@ const auction = () => {
 }
 
 export default auction
-
-const styles = StyleSheet.create({})

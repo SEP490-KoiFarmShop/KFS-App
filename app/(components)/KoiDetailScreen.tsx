@@ -2,6 +2,7 @@ import { View, Text, Image, ScrollView, TouchableOpacity } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import GlobalApi from '@/utils/GlobalApi';
+import CustomButton from '@/components/CustomButton';
 
 interface Koi {
     id: string;
@@ -19,6 +20,12 @@ export default function KoiDetailScreen() {
     const router = useRouter();
     const { id } = useLocalSearchParams();
     const [koisById, setKoisById] = useState<Koi | null>(null);
+    const isLoading = false;
+
+    const submit = async () => {
+        router.push(`/Cart`)
+    };
+
     useEffect(() => {
         const fetchCategories = async () => {
             try {
@@ -30,16 +37,22 @@ export default function KoiDetailScreen() {
         };
         fetchCategories();
     }, [id]);
+
     if (!koisById) {
         return <Text>Loading...</Text>;
     }
+
     const formatPrice = (price: number) => {
         return price.toLocaleString('vi-VN');
     };
+
     return (
-        <View>
-            <View className='flex flex-row'>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View className='flex-1'>
+            <View className='flex-row'>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                >
                     {koisById.image.length > 0 ? (
                         koisById.image.map((img, index) => (
                             <Image
@@ -54,17 +67,31 @@ export default function KoiDetailScreen() {
                     )}
                 </ScrollView>
             </View>
-            <View className='m-5'>
-                <Text className='font-bold text-2xl text-black ml-5'>{koisById.name}</Text>
-                <Text className='font-semibold text-orange-600 mt-3 text-xl ml-5'>{formatPrice(koisById.price)} VNĐ</Text>
-                <Text className='text-gray-500 mt-5'>- {koisById.description}</Text>
-                <Text className='font-semibold text-xl mt-5'>Detail Information of {koisById.name} :</Text>
-                <Text className='font-black text-xl mt-2'>Source:</Text>
-                <TouchableOpacity onPress={() => router.push(`/KoiByBreeder?breeder=${koisById.breeder}`)}>
-                    <Text className='text-blue-600 text-xl mt-1 font-medium'>{koisById.breeder}</Text>
-                </TouchableOpacity>
+
+            <ScrollView
+                contentContainerStyle={{ paddingBottom: 100 }}
+                showsVerticalScrollIndicator={false}
+            >
+                <View className='m-5'>
+                    <Text className='font-bold text-2xl text-black ml-5'>{koisById.name}</Text>
+                    <Text className='font-semibold text-orange-600 mt-3 text-xl ml-5'>{formatPrice(koisById.price)} VNĐ</Text>
+                    <Text className='text-gray-500 mt-5'>- {koisById.description}</Text>
+                    <Text className='font-semibold text-xl mt-5'>Detail Information of {koisById.name} :</Text>
+                    <Text className='font-black text-xl mt-2'>Source:</Text>
+                    <TouchableOpacity onPress={() => router.push(`/KoiByBreeder?breeder=${koisById.breeder}`)}>
+                        <Text className='text-blue-600 text-xl mt-1 font-medium'>{koisById.breeder}</Text>
+                    </TouchableOpacity>
+                </View>
+            </ScrollView>
+
+            <View>
+                <CustomButton
+                    title="Add To Cart"
+                    handlePress={submit}
+                    containerStyles="mt-10 mb-5 bg-orange-500 h-14 mr-5 ml-5"
+                    isLoading={isLoading}
+                />
             </View>
         </View>
-
     )
 }

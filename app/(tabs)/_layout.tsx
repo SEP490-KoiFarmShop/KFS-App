@@ -85,7 +85,7 @@ const TabsLayout = () => {
                             <TabIcon
                                 iconComponent={<FontAwesome6 name="pen-to-square" size={24} color={color} />} // Sử dụng `color`
                                 color={color}
-                                name="Bookmark"
+                                name="Consignment"
                                 focused={focused}
                             />
                         )

@@ -26,6 +26,13 @@ const layout = () => {
                     title: route.params?.breeder || 'Breeder',
                 })}
             />
+            <Stack.Screen
+                name="Cart"
+                options={() => ({
+                    headerShown: false,
+                    title: 'Your Cart',
+                })}
+            />
         </Stack>
     );
 };
