@@ -1,20 +1,26 @@
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import React from 'react';
+import { useRouter } from 'expo-router';
+import Entypo from '@expo/vector-icons/Entypo';
 
 export default function Wallet() {
+    const router = useRouter();
     return (
         <View className="flex-1 bg-orange-500">
+
             {/* Header */}
-            <View className="p-5 flex-row justify-between items-center">
-                <Text className="text-white text-lg font-bold">ShopeePay</Text>
-                <TouchableOpacity>
-                    <Text className="text-white text-lg">🪙 0</Text>
+            <View className='flex-row justify-start'>
+                <TouchableOpacity onPress={() => router.back()} className='bg-white p-2 rounded-tr-2xl rounded-bl-2xl ml-4 mt-5'>
+                    <Entypo name="chevron-thin-left" size={24} color="black" />
                 </TouchableOpacity>
+                <Text className="text-white text-lg font-bold mt-7 ml-5">ShopeePay</Text>
             </View>
+
+            <View></View>
 
             {/* Balance */}
             <View className="p-5">
-                <Text className="text-white text-sm">Tổng số dư 👁️</Text>
+                <Text className="text-white text-sm">Total balance 👁️</Text>
                 <Text className="text-white text-2xl font-bold">đ4.084</Text>
             </View>
 
@@ -23,47 +29,24 @@ export default function Wallet() {
                 <View className="flex-row justify-around">
                     <TouchableOpacity className="items-center">
                         <Text className="text-orange-500 text-lg">💰</Text>
-                        <Text className="text-sm font-medium">Nạp tiền</Text>
+                        <Text className="text-sm font-medium">Deposit</Text>
                     </TouchableOpacity>
                     <TouchableOpacity className="items-center">
                         <Text className="text-orange-500 text-lg">🔄</Text>
-                        <Text className="text-sm font-medium">Chuyển tiền</Text>
+                        <Text className="text-sm font-medium">Withdraw</Text>
                     </TouchableOpacity>
                     <TouchableOpacity className="items-center">
                         <Text className="text-orange-500 text-lg">📥</Text>
-                        <Text className="text-sm font-medium">QR Nhận tiền</Text>
+                        <Text className="text-sm font-medium">Transaction History</Text>
                     </TouchableOpacity>
                     <TouchableOpacity className="items-center">
                         <Text className="text-orange-500 text-lg">🎁</Text>
-                        <Text className="text-sm font-medium">Ưu đãi</Text>
+                        <Text className="text-sm font-medium">Incentive Policy</Text>
                     </TouchableOpacity>
                 </View>
-
-                {/* Notification */}
-                <View className="bg-yellow-100 p-3 mt-4 rounded-lg">
-                    <Text className="text-yellow-700 font-semibold">Bắt buộc: Cập nhật sinh trắc học</Text>
-                    <Text className="text-gray-600 text-xs">Chuẩn bị CCCD/Căn cước (gắn chip) để quét NFC theo quy định NHNN</Text>
-                </View>
             </View>
-
-            {/* Additional Actions */}
-            <View className="flex-row justify-around bg-white p-4 mt-5 mx-5 rounded-lg shadow-lg">
-                <TouchableOpacity className="items-center">
-                    <Text className="text-orange-500 text-lg">📱</Text>
-                    <Text className="text-sm">Tải App ShopeePay</Text>
-                </TouchableOpacity>
-                <TouchableOpacity className="items-center">
-                    <Text className="text-orange-500 text-lg">🌍</Text>
-                    <Text className="text-sm">Google Play</Text>
-                </TouchableOpacity>
-                <TouchableOpacity className="items-center">
-                    <Text className="text-orange-500 text-lg">🛒</Text>
-                    <Text className="text-sm">Mua Hàng Trên Shopee</Text>
-                </TouchableOpacity>
-                <TouchableOpacity className="items-center">
-                    <Text className="text-orange-500 text-lg">💳</Text>
-                    <Text className="text-sm">SPayLater</Text>
-                </TouchableOpacity>
+            <View className='bg-white p-2 rounded-t-2xl mt-5 h-full'>
+                {/* Text  */}
             </View>
         </View>
     );
