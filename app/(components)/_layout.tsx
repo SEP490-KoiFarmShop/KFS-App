@@ -33,6 +33,13 @@ const layout = () => {
                     title: 'Your Cart',
                 })}
             />
+            <Stack.Screen
+                name="Wallet"
+                options={() => ({
+                    headerShown: false,
+                    title: 'Your Wallet',
+                })}
+            />
         </Stack>
     );
 };

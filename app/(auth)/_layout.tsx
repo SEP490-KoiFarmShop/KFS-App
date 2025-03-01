@@ -1,6 +1,4 @@
-import { Text, View } from 'react-native'
 import React from 'react'
-import GlobalProvider from '@/context/GlobalProvider'
 import { Stack } from 'expo-router'
 
 const layout = () => {
