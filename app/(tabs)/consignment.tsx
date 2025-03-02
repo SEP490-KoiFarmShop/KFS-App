@@ -9,12 +9,15 @@ import {
 } from "react-native";
 import { Checkbox } from "react-native-paper";
 import BrandHeader from "../(components)/BrandHeader";
-import ConsignmentTermsModal from "../(components)/ConsignmentTermsModal";
-import ImageUpload from "../(components)/ImageUpload";
+import ConsignmentTermsModal from "../(components)/consignment/ConsignmentTermsModal";
+import ImageUpload from "../(components)/consignment/ImageUpload";
+import { useRouter } from "expo-router";
 
 const consignment = () => {
   const [checked, setChecked] = useState(false);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const router = useRouter();
+
   return (
     <SafeAreaView className="w-full h-full bg-white">
       <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
@@ -80,7 +83,25 @@ const consignment = () => {
           </View>
           <ImageUpload title="Upload Koi picture (3 max)" />
         </View>
+        <View className="w-4/5 self-center mt-8 mb-10">
+          <TouchableOpacity
+            className="bg-blue-600 py-4 rounded-2xl shadow-lg items-center"
+            onPress={() => {
+              router.push("/consignment/ContactInfoScreen");
+            }}
+          >
+            <Text className="text-white text-lg font-semibold">Next</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
+      <TouchableOpacity
+        onPress={() => {
+          router.push("/consignment/ConsignmentList");
+        }}
+        className="absolute top-6 right-3 bg-orange-400 py-3 px-4 rounded-lg items-center self-center"
+      >
+        <Text className="text-white text-lg font-bold">View Consignments</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };

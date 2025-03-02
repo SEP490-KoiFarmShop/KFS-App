@@ -70,6 +70,7 @@ const ImageUpload = ({ title }: ImageUploadProps) => {
       >
         <Text className="text-white">+</Text>
       </TouchableOpacity>
+      <View></View>
     </View>
   );
 };
