@@ -40,20 +40,20 @@ const layout = () => {
           title: "Your Wallet",
         })}
       />
-      <Stack.Screen
+      {/* <Stack.Screen
         name="ContactInfoScreen"
         options={{
           headerShown: true,
           title: "Contact Info",
         }}
-      />
-      <Stack.Screen
+      /> */}
+      {/* <Stack.Screen
         name="ConsignmentList"
         options={{
           headerShown: true,
           title: "Consignment List",
         }}
-      />
+      /> */}
     </Stack>
   );
 };

@@ -23,9 +23,6 @@ export default function KoiByBreeder() {
     }, [breeder]);
     return (
         <View className="flex-1">
-            {/* <ScrollView showsVerticalScrollIndicator={false}>
-                <SearchComponent />
-            </ScrollView> */}
             {koisByBreeder.length > 0 ?
                 <FlatList
                     key={`flatlist-${numColumns}`}
