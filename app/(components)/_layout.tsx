@@ -40,6 +40,13 @@ const layout = () => {
           title: "Your Wallet",
         })}
       />
+      <Stack.Screen
+        name="KoiFishAll"
+        options={() => ({
+          headerShown: false,
+          title: "Koi List",
+        })}
+      />
       {/* <Stack.Screen
         name="ContactInfoScreen"
         options={{

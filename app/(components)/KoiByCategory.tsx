@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import GlobalApi from '@/utils/GlobalApi';
 import DetailKoiItem from '@/components/DetailKoiItem';
 import SearchComponent from '@/components/Search';
+import { ActivityIndicator, MD2Colors } from 'react-native-paper';
 
 export default function KoiByCategory() {
     const router = useRouter();
@@ -42,7 +43,9 @@ export default function KoiByCategory() {
                 />
                 :
                 <Text className='text-2xl text-center mt-[20%] text-gray-600'>
-                    No Product Found
+                    <View className="justify-center items-center">
+                        <ActivityIndicator animating={true} color={MD2Colors.red800} />
+                    </View>
                 </Text>
             }
         </View >

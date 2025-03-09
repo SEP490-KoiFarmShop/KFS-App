@@ -3,16 +3,17 @@ import { View, TextInput, Text } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import CustomButton from "./CustomButton";
 
-const SearchComponent = () => {
+const SearchComponent = ({ onSearch }: any) => {
     const [priceType, setPriceType] = useState("");
     const [sex, setSex] = useState("");
     const [breeder, setBreeder] = useState("");
     const [variety, setVariety] = useState("");
+    const [searchValue, setSearchValue] = useState("");
     const isLoading = false;
 
-    const submit = async () => {
+    const submit = () => {
+        onSearch(searchValue);
     };
-
     return (
         <View className="p-4 bg-gray-100">
             <View className="mb-4 flex-row space-x-4">
@@ -21,6 +22,8 @@ const SearchComponent = () => {
                     <TextInput
                         className="border border-black rounded-lg px-2 h-10 bg-white text-left text-base leading-9"
                         placeholder="Enter name"
+                        value={searchValue}
+                        onChangeText={setSearchValue}
                         style={{ fontSize: 16, paddingVertical: 0, paddingTop: 3 }}
                     />
                 </View>
@@ -32,6 +35,7 @@ const SearchComponent = () => {
                             selectedValue={priceType}
                             onValueChange={(itemValue) => setPriceType(itemValue)}
                             style={{ height: 52, fontSize: 14, transform: [{ translateY: -10 }] }}
+                            mode="dropdown"
                         >
                             <Picker.Item label="Select price type" value="" />
                             <Picker.Item label="Low to High" value="low" />
@@ -49,6 +53,7 @@ const SearchComponent = () => {
                             selectedValue={sex}
                             onValueChange={(itemValue) => setSex(itemValue)}
                             style={{ height: 52, fontSize: 14, transform: [{ translateY: -10 }] }}
+                            mode="dropdown"
                         >
                             <Picker.Item label="Select sex" value="" />
                             <Picker.Item label="Male" value="male" />
@@ -64,6 +69,7 @@ const SearchComponent = () => {
                             selectedValue={breeder}
                             onValueChange={(itemValue) => setBreeder(itemValue)}
                             style={{ height: 52, fontSize: 14, transform: [{ translateY: -10 }] }}
+                            mode="dropdown"
                         >
                             <Picker.Item label="Select breeder" value="" />
                             <Picker.Item label="Breeder 1" value="breeder1" />
@@ -81,6 +87,7 @@ const SearchComponent = () => {
                             selectedValue={variety}
                             onValueChange={(itemValue) => setVariety(itemValue)}
                             style={{ height: 52, fontSize: 14, transform: [{ translateY: -10 }] }}
+                            mode="dropdown"
                         >
                             <Picker.Item label="Select variety" value="" />
                             <Picker.Item label="Kohaku" value="kohaku" />
@@ -95,7 +102,6 @@ const SearchComponent = () => {
                 <View className="mb-4 ml-2 flex-1">
                     <CustomButton title="Search" handlePress={submit}
                         containerStyles="mt-5 bg-orange-500 h-14"
-                        isLoading={isLoading}
                     />
                 </View>
             </View>

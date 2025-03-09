@@ -3,9 +3,11 @@ import React, { useEffect, useState } from 'react'
 import Heading from './Heading'
 import GlobalApi from '@/utils/GlobalApi';
 import LastestKoiItem from './LastestKoiItem';
+import { useRouter } from 'expo-router';
 
 export default function LatestKoi() {
     const [kois, setKois] = useState();
+    const router = useRouter();
     useEffect(() => {
         const fetchCategories = async () => {
             try {
@@ -20,7 +22,7 @@ export default function LatestKoi() {
     }, []);
     return (
         <View className='mt-10'>
-            <Heading text={"Latest Koi for you"} isViewAll={true} />
+            <Heading text={"Latest Koi for you"} isViewAll={true} onViewAllPress={() => router.push(`/KoiFishAll`)} />
             <FlatList
                 data={kois}
                 keyExtractor={(item) => item.id}
