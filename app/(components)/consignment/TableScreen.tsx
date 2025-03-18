@@ -1,85 +1,76 @@
-import React, { useState } from "react";
-import { DataTable } from "react-native-paper";
-import { View, Text } from "react-native";
+import { View, FlatList } from "react-native";
+import React, { useEffect, useState } from "react";
+import ConsignItem from "@/components/ConsignItem";
+import { ActivityIndicator, Text } from "react-native-paper";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 
-const TableExample = () => {
-  const [sortBy, setSortBy] = useState("amount");
-  const [sortAscending, setSortAscending] = useState(true);
+export default function TableScreen({ status }: any) {
+  const [consignments, setConsignments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-  const data = [
-    { consignment: "Kohaku - Online", amount: 85000, status: "Finish" },
-    { consignment: "Tancho - Offline", amount: 80000, status: "Finish" },
-    { consignment: "Kohaku - Online", amount: 75000, status: "Staff Approve" },
-    { consignment: "Tancho - Offline", amount: 70000, status: "Pending" },
-    { consignment: "Kohaku - Online", amount: 65000, status: "Fail" },
-    { consignment: "Tancho - Online", amount: 60000, status: "Fail" },
-  ];
+  useEffect(() => {
+    const fetchConsignments = async () => {
+      try {
+        const userData = await AsyncStorage.getItem("userData");
+        if (!userData) {
+          router.push("/(auth)/LoginScreen");
+          return;
+        }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Finish":
-        return "green";
-      case "Staff Approve":
-        return "orange";
-      case "Pending":
-        return "gold";
-      case "Fail":
-        return "red";
-      default:
-        return "black";
-    }
-  };
+        const parsedToken = JSON.parse(userData);
+        const jwtToken = parsedToken?.accessToken;
 
-  // Function sắp xếp theo status hoặc amount
-  const sortedData = [...data].sort((a, b) => {
-    if (sortBy === "amount") {
-      return sortAscending ? a.amount - b.amount : b.amount - a.amount;
-    } else {
-      return sortAscending
-        ? a.status.localeCompare(b.status)
-        : b.status.localeCompare(a.status);
-    }
-  });
+        const response = await axios.get(
+          "https://kfsapis.azurewebsites.net/api/Consignment/GetListOfConsignmentsForCustomer",
+          {
+            params: {
+              status,
+              "page-number": 1,
+              "page-size": 10,
+            },
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        console.log("Data:", status);
+        setConsignments(response.data);
+      } catch (error) {
+        console.error("Error fetching consignments:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchConsignments();
+  }, [status]);
+
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#FF0000" />
+      </View>
+    );
+  }
 
   return (
-    <View>
-      <DataTable>
-        <DataTable.Header>
-          <DataTable.Title>Consignment</DataTable.Title>
-
-          <DataTable.Title
-            onPress={() => {
-              setSortBy("amount");
-              setSortAscending(!sortAscending);
-            }}
-          >
-            Amount {sortBy === "amount" ? (sortAscending ? "↑" : "↓") : ""}
-          </DataTable.Title>
-
-          <DataTable.Title
-            onPress={() => {
-              setSortBy("status");
-              setSortAscending(!sortAscending);
-            }}
-          >
-            Status {sortBy === "status" ? (sortAscending ? "↑" : "↓") : ""}
-          </DataTable.Title>
-        </DataTable.Header>
-
-        {sortedData.map((row, index) => (
-          <DataTable.Row key={index}>
-            <DataTable.Cell>{row.consignment}</DataTable.Cell>
-            <DataTable.Cell>${row.amount.toLocaleString()}</DataTable.Cell>
-            <DataTable.Cell>
-              <Text style={{ color: getStatusColor(row.status) }}>
-                {row.status}
-              </Text>
-            </DataTable.Cell>
-          </DataTable.Row>
-        ))}
-      </DataTable>
+    <View className="p-4 bg-gray-100 flex-1">
+      {consignments.length === 0 ? (
+        <View className="flex-1 justify-center items-center">
+          <Text className="text-lg text-gray-500">Không có đơn ký gửi</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={consignments}
+          keyExtractor={(item: any) => item.id.toString()}
+          renderItem={({ item }) => <ConsignItem item={item} />}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </View>
   );
-};
-
-export default TableExample;
+}

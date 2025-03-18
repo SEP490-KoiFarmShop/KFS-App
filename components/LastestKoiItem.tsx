@@ -24,7 +24,7 @@ export default function LastestKoiItem({ koi }: LastestKoiItemProps) {
                 <Text className="w-[160] font-semibold" numberOfLines={1} ellipsizeMode="tail">
                     {koi?.name || 'Unknown'}
                 </Text>
-                <Text className="mt-3">
+                <Text className="w-[160] font-semibold" numberOfLines={1} ellipsizeMode="tail">
                     Variety: {koi?.varieties || 'Unknown'}
                 </Text>
                 <Text>

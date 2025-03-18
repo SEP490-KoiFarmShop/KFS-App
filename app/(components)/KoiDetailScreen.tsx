@@ -1,4 +1,4 @@
-import { View, Text, Image, ScrollView, TouchableOpacity, Alert } from "react-native";
+import { View, Text, Image, ScrollView, TouchableOpacity, Alert, Dimensions } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import GlobalApi from "@/utils/GlobalApi";
@@ -27,6 +27,7 @@ export default function KoiDetailScreen() {
   const { id } = useLocalSearchParams();
   const [koisById, setKoisById] = useState<Koi | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const screenWidth = Dimensions.get("window").width;
 
   const submit = async () => {
     try {
@@ -62,8 +63,6 @@ export default function KoiDetailScreen() {
       Alert.alert("Error", "Failed to add koi to cart.");
     }
   };
-
-
 
   useEffect(() => {
     const fetchKoiDetail = async () => {
@@ -141,7 +140,12 @@ export default function KoiDetailScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {(koisById.image.length > 0 ? koisById.image : [{ url: require("../../assets/icon/defaultimage.jpg") }])
             .map((img, index) => (
-              <Image key={index} className="w-[300] h-[200] mt-5 mr-5 " source={typeof img.url === "string" ? { uri: img.url } : img.url} resizeMode="stretch" />
+              <Image
+                key={index}
+                className="w-[250px] h-[300px] mt-5 mr-5"
+                source={typeof img.url === "string" ? { uri: img.url } : img.url}
+                resizeMode="contain"
+              />
             ))}
         </ScrollView>
       </View>

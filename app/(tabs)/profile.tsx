@@ -1,136 +1,83 @@
-import { Image, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
-import React, { useEffect, useState } from "react";
-import Heading from "../../components/Heading";
-import DuyApi from "@/utils/DuyApi";
-import CustomButton from "@/components/CustomButton";
-import { useRouter } from "expo-router";
-import Entypo from '@expo/vector-icons/Entypo';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import React from 'react';
+import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
+import BrandHeader from '../(components)/consignment/BrandHeader';
+import { useRouter } from 'expo-router';
 
-const profile = () => {
+/**
+ * Component chính: Hồ sơ người dùng
+ */
+export default function Profile() {
   const router = useRouter();
-  const isLoading = false;
-  interface User {
-    userId: string;
-    username: string;
-    email: string;
-    password: string;
-    phoneNumber: string;
-    address: string;
-    loyaltyPoints: number;
-    walletBalance: number;
-    avatarUrl: string;
-  }
-
-  const submit = async () => {
-  };
-
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await DuyApi.getAppUsers();
-        const users = response?.appUsers; // Lấy danh sách user từ API
-        if (users && users.length > 0) {
-          setUser(users[0]); // Gán user đầu tiên vào state
-        }
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      }
-    };
-
-    fetchUser();
-  }, []);
-
   return (
-    <ScrollView>
-
-      {/* Arrow Back */}
-      <View className='flex-row justify-start'>
-        <TouchableOpacity onPress={() => router.back()} className='bg-white p-2 rounded-tr-2xl rounded-bl-2xl ml-4 mt-5'>
-          <Entypo name="chevron-thin-left" size={24} color="black" />
-        </TouchableOpacity>
-        <Text className="text-black text-lg font-bold mt-7 ml-5">Profile</Text>
-      </View>
-
-      <View className="items-center font-semibold mt-3">
-        <Image
-          source={{ uri: user?.avatarUrl }}
-          className="w-36 h-36 rounded-full"
-        />
-        <Text className="text-lg font-medium mt-3">{user?.username}</Text>
-      </View>
-      <View className="ml-5 mr-5">
-        <Text className="text-lg font-bold mb-2">Name</Text>
-        <TextInput
-          className="border border-black rounded-lg px-2 h-10 bg-white text-left text-base leading-9 mb-3"
-          placeholder={user?.username}
-          style={{ fontSize: 16, paddingVertical: 0, paddingTop: 3 }}
-        />
-        <Text className="text-lg font-bold mb-2">Email</Text>
-        <TextInput
-          className="border border-black rounded-lg px-2 h-10 bg-white text-left text-base leading-9 mb-3"
-          placeholder={user?.email}
-          style={{ fontSize: 16, paddingVertical: 0, paddingTop: 3 }}
-        />
-        <Text className="text-lg font-bold mb-2">Passsword</Text>
-        <TextInput
-          className="border border-black rounded-lg px-2 h-10 bg-white text-left text-base leading-9 mb-3"
-          placeholder="*******************"
-          secureTextEntry={true}
-          style={{ fontSize: 16, paddingVertical: 0, paddingTop: 3 }}
-        />
-        <Text className="text-lg font-bold mb-2">Phone number</Text>
-        <TextInput
-          className="border border-black rounded-lg px-2 h-10 bg-white text-left text-base leading-9 mb-3"
-          placeholder={user?.phoneNumber}
-          style={{ fontSize: 16, paddingVertical: 0, paddingTop: 3 }}
-        />
-      </View>
-      <View className="mb-4 ml-2 flex-1">
-        <CustomButton
-          title="Submit and Publish"
-          handlePress={() => {
-            console.log("Profile updated");
-          }}
-          containerStyles="mt-5 bg-orange-500 h-14 ml-5 mr-5"
-          isLoading={false}
-        />
-      </View>
-      <View className="flex-row">
-        <View className="mb-4 flex-1">
-          <CustomButton
-            title="Auction history"
-            handlePress={() => {
-              console.log("Go to auction history");
-            }}
-            containerStyles="mt-5 bg-blue-500 h-14  ml-5"
-            isLoading={false}
-          />
+    <ScrollView className="bg-gray-100">
+      {/* Header thương hiệu */}
+      <BrandHeader />
+      {/* Đơn mua & Lịch sử mua hàng */}
+      <View className="bg-white p-4 mt-2">
+        <View className="flex-row justify-between">
+          <Text className="font-semibold">Đơn mua</Text>
+          <Text className="text-blue-500">Xem lịch sử mua hàng</Text>
         </View>
-        {/* <View className="mb-4 ml-2 flex-1 ">
-          <CustomButton
-            title="Transaction history"
-            handlePress={() => {
-              console.log("Go to trans");
-            }}
-            containerStyles="mt-5 bg-blue-500 h-14 mr-5"
-            isLoading={false}
-          />
-        </View> */}
-        <View className="mb-4 ml-2 flex-1 ">
-          <CustomButton
-            title="Your wallet"
-            handlePress={() => {
-              router.push("/Wallet")
-            }}
-            containerStyles="mt-5 bg-blue-500 h-14 mr-5"
-            isLoading={false}
-          />
+        <View className="flex-row justify-around mt-3">
+          <TouchableOpacity onPress={() => router.push("/order/OrderHome")}>
+            <IconLabel icon="check-circle" label="Chờ xác nhận" />
+          </TouchableOpacity>
+          <IconLabel icon="local-shipping" label="Chờ lấy hàng" library="MaterialIcons" />
+          <IconLabel icon="directions-car" label="Chờ giao hàng" library="MaterialIcons" />
+          <IconLabel icon="star" label="Đánh giá" />
+        </View>
+      </View>
+
+      {/* Các dịch vụ */}
+      <View className="bg-white p-4 mt-2">
+        <TouchableOpacity className="flex-row justify-between py-2">
+          <Text>Đơn Nạp thẻ và Dịch vụ</Text>
+          <MaterialIcons name="chevron-right" size={24} color="gray" />
+        </TouchableOpacity>
+        <TouchableOpacity className="flex-row justify-between py-2">
+          <Text>Đơn ShopeeFood</Text>
+          <MaterialIcons name="chevron-right" size={24} color="gray" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Sale giữa tháng */}
+      <View className="bg-white p-4 mt-2">
+        <Text className="font-semibold">Ngày 15 Sale Giữa Tháng</Text>
+        <View className="flex-row justify-around mt-3">
+          <IconLabel icon="bolt" label="Khung Giờ Săn Sale" />
+          <IconLabel icon="play-circle" label="Shopee Live" />
+        </View>
+      </View>
+
+      {/* Tiện ích của tôi */}
+      <View className="bg-white p-4 mt-2">
+        <Text className="font-semibold">Tiện ích của tôi</Text>
+        <View className="flex-row justify-around mt-3">
+          <IconLabel icon="credit-card" label="Ví ShopeePay" />
+          <IconLabel icon="money" label="SPayLater" />
+          <IconLabel icon="gift" label="Shopee Xu" />
+          <IconLabel icon="local-offer" label="Kho Voucher" library="MaterialIcons" />
         </View>
       </View>
     </ScrollView>
   );
-};
+}
 
-export default profile;
+/**
+ * Component IconLabel: Hiển thị biểu tượng và nhãn đi kèm
+ * @param {string} icon - Tên biểu tượng
+ * @param {string} label - Nhãn hiển thị
+ * @param {string} [library="FontAwesome"] - Thư viện biểu tượng (FontAwesome hoặc MaterialIcons)
+ */
+const IconLabel = ({ icon, label, library = "FontAwesome" }: any) => {
+  // Xác định thư viện sử dụng cho biểu tượng
+  const IconComponent = library === "MaterialIcons" ? MaterialIcons : FontAwesome;
+
+  return (
+    <View className="items-center">
+      <IconComponent name={icon} size={24} color="black" />
+      <Text className="text-xs mt-1">{label}</Text>
+    </View>
+  );
+};

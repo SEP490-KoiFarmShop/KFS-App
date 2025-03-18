@@ -47,20 +47,20 @@ const layout = () => {
           title: "Koi List",
         })}
       />
-      {/* <Stack.Screen
-        name="ContactInfoScreen"
-        options={{
-          headerShown: true,
-          title: "Contact Info",
-        }}
-      /> */}
-      {/* <Stack.Screen
-        name="ConsignmentList"
-        options={{
-          headerShown: true,
-          title: "Consignment List",
-        }}
-      /> */}
+      <Stack.Screen
+        name="OrderDetail"
+        options={() => ({
+          headerShown: false,
+          title: "Order Detail",
+        })}
+      />
+      <Stack.Screen
+        name="OrderSuccess"
+        options={() => ({
+          headerShown: false,
+          title: "Order Success",
+        })}
+      />
     </Stack>
   );
 };

@@ -1,57 +1,55 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  Alert,
-  ScrollView,
-} from "react-native";
+import { View, Text, Image, TouchableOpacity, Alert, ScrollView } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
 interface ImageUploadProps {
   title: string;
+  onImagesSelected?: (images: string[]) => void;
 }
 
-const ImageUpload = ({ title }: ImageUploadProps) => {
+const ImageUpload = ({ title, onImagesSelected }: ImageUploadProps) => {
   const [imageUris, setImageUris] = useState<string[]>([]);
 
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Quyền bị từ chối", "Bạn cần cấp quyền để chọn ảnh!");
+  const pickImages = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissionResult.granted === false) {
+      Alert.alert("Permission Denied", "You need to grant access to your gallery!");
       return;
     }
-    let result = await ImagePicker.launchImageLibraryAsync({
-      //   allowsEditing: true,
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       quality: 1,
     });
-    if (!result.canceled) {
-      let selectedImages = result.assets.map((asset) => asset.uri);
-      if (imageUris.length + selectedImages.length > 3) {
-        Alert.alert("Lỗi", "Chỉ được chọn tối đa 3 ảnh!");
+
+    if (!result.canceled && result.assets.length > 0) {
+      const selectedImages = result.assets.map((asset) => asset.uri);
+      if (imageUris.length + selectedImages.length > 10) {
+        Alert.alert("Error", "You can select up to 10 images only!");
         return;
       }
-      setImageUris([...imageUris, ...selectedImages]);
+      const updatedUris = [...imageUris, ...selectedImages];
+      setImageUris(updatedUris);
+      onImagesSelected && onImagesSelected(updatedUris); // Gọi callback nếu có
     }
   };
 
-  // Xóa ảnh khỏi danh sách
-  const removeImage = (uriToRemove: string) => {
-    setImageUris(imageUris.filter((uri) => uri !== uriToRemove));
+  const removeImage = (index: number) => {
+    const updatedImages = imageUris.filter((_, i) => i !== index);
+    setImageUris(updatedImages);
+    onImagesSelected && onImagesSelected(updatedImages); // Cập nhật callback sau khi xoá
   };
 
   return (
-    <View className="items-center p-4 flex-row">
+    <View className="items-center p-4">
       <ScrollView horizontal>
         {imageUris.length > 0 ? (
           imageUris.map((uri, index) => (
             <View key={index} className="relative m-2">
               <Image source={{ uri }} className="w-40 h-40 rounded-lg" />
-              {/* Nút xóa ảnh */}
               <TouchableOpacity
-                onPress={() => removeImage(uri)}
+                onPress={() => removeImage(index)}
                 className="absolute top-1 right-1 bg-red-500 rounded-full p-2"
               >
                 <Text className="text-white text-xs">X</Text>
@@ -65,12 +63,11 @@ const ImageUpload = ({ title }: ImageUploadProps) => {
         )}
       </ScrollView>
       <TouchableOpacity
-        onPress={pickImage}
+        onPress={pickImages}
         className="mt-4 px-4 py-2 bg-blue-500 rounded"
       >
         <Text className="text-white">+</Text>
       </TouchableOpacity>
-      <View></View>
     </View>
   );
 };

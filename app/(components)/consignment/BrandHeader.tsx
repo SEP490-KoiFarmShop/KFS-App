@@ -1,6 +1,6 @@
 import { View, Text, Image } from "react-native";
 import React from "react";
-const logo = require("../../assets/Logo_Team.jpg");
+const logo = require("../../../assets/Logo_Team.jpg");
 
 const BrandHeader = () => {
   return (

@@ -6,7 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
 } from "react-native";
-import BrandHeader from "../BrandHeader";
+import BrandHeader from "./BrandHeader";
 import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
 import { router } from "expo-router";
 const ContactInfoScreen = () => {

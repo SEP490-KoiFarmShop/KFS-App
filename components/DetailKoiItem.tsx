@@ -11,27 +11,21 @@ export default function DetailKoiItem({ koi }: DetailKoiItemProps) {
     };
 
     const imageUrls = koi?.imageUrl
-        ? koi.imageUrl
-            .split("https")
-            .filter((url: string) => url.trim() !== "")
-            .map((url: string) => "https" + url.trim())
+        ? koi.imageUrl.split(", ").map((url: string) => url.trim())
         : [];
 
-    const imageSource =
-        koi?.image && Array.isArray(koi.image) && koi.image.length > 0 && koi.image[0]?.url
-            ? { uri: koi.image[0].url }
-            : imageUrls.length > 0
-                ? { uri: imageUrls[0] }
-                : require('../assets/icon/defaultimage.jpg');
+    const imageSource = imageUrls.length > 0
+        ? { uri: imageUrls[0] }
+        : require('../assets/icon/defaultimage.jpg');
 
     return (
         <View className="m-5 p-[10] w-[180] h-[270] bg-white rounded-[10]">
             <Image className="w-[160] h-[100] rounded-[10]" source={imageSource} />
             <View className="p-[7] flex gap-[3]">
-                <Text className="w-[160] font-semibold" numberOfLines={1} ellipsizeMode="tail">
+                <Text className="w-[160] font-bold" numberOfLines={1} ellipsizeMode="tail">
                     {koi?.name || 'Unknown'}
                 </Text>
-                <Text className="mt-3">
+                <Text numberOfLines={1} ellipsizeMode="tail">
                     Variety: {koi?.varieties || 'Unknown'}
                 </Text>
                 <Text>

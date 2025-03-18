@@ -1,86 +1,183 @@
-import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native'
-import React from 'react'
+import { View, TouchableOpacity, ScrollView, Image, Text, Alert } from 'react-native'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Entypo from '@expo/vector-icons/Entypo';
 import CustomButton from '@/components/CustomButton';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { Checkbox } from 'react-native-paper';
 
 export default function Cart() {
     const router = useRouter();
-    const isLoading = false;
+    const [cartItems, setCartItems] = useState<any>([]);
+    const [selectedItems, setSelectedItems] = useState<{ [key: string]: boolean }>({});
+    const [totalPrice, setTotalPrice] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchCart = async () => {
+            try {
+                setIsLoading(true);
+                const userData = await AsyncStorage.getItem("userData");
+                if (!userData) {
+                    router.push("/(auth)/LoginScreen");
+                    return;
+                }
+
+                const parsedToken = JSON.parse(userData);
+                const id = parsedToken?.id;
+                const jwtToken = parsedToken?.accessToken;
+
+                const response = await axios.get(`https://kfsapis.azurewebsites.net/api/Cart/GetCartAndItemsInside`
+                    ,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${jwtToken}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+
+                if (response.data && response.data.items) {
+                    setCartItems(response.data.items);
+                    setTotalPrice(response.data.items.reduce((sum: any, item: any) => sum + item.price * item.quantity, 0));
+                }
+            } catch (error) {
+                console.error("Lỗi lấy dữ liệu giỏ hàng:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchCart();
+    }, []);
 
     const submit = async () => {
+        try {
+            const selectedKoiFishIds = Object.keys(selectedItems).filter(id => selectedItems[id]);
+
+            if (selectedKoiFishIds.length === 0) {
+                console.warn("Không có sản phẩm nào được chọn.");
+                return;
+            }
+
+            setIsLoading(true);
+            const token = await AsyncStorage.getItem("userData");
+            if (!token) {
+                Alert.alert("Error", "You need to login first!");
+                router.push('/(auth)/LoginScreen');
+                return;
+            }
+            const parsedToken = JSON.parse(token);
+            const jwtToken = parsedToken?.accessToken;
+
+            const queryString = selectedKoiFishIds.map(id => `koi-fish-ids=${id}`).join("&");
+
+            const url = `https://kfsapis.azurewebsites.net/api/v1/orders/check-out?${queryString}`;
+
+            const response = await axios.get(url, {
+                headers: {
+                    Authorization: `Bearer ${jwtToken}`,
+                    "Content-Type": "application/json",
+                },
+            });
+            router.push(`/OrderDetail?orderId=${selectedKoiFishIds.join("x")}`);
+        } catch (error: any) {
+            console.error("Lỗi khi checkout:", error.response);
+        } finally {
+            setIsLoading(false);
+        }
     };
+
+
+
+    const toggleCheckbox = (koiFishId: string) => {
+        // console.log("Toggling item ID:", koiFishId);
+        setSelectedItems((prev) => ({
+            ...prev,
+            [koiFishId]: !prev[koiFishId],
+        }));
+    };
+
     return (
-        <View className='flex-1 bg-white' style={{ backgroundColor: "white" }}>
+        <View className='flex-1 bg-gray-100'>
             <SafeAreaView className='flex-1'>
                 {/* Go Back */}
-                <View className='flex-row justify-start'>
-                    <TouchableOpacity onPress={() => router.back()} className='bg-white p-2 rounded-tr-2xl rounded-bl-2xl ml-4 mt-5'>
+                <View className='flex-row items-center p-5 bg-white shadow-md'>
+                    <TouchableOpacity onPress={() => router.back()} className='p-2 rounded-full bg-gray-100'>
                         <Entypo name="chevron-thin-left" size={24} color="black" />
                     </TouchableOpacity>
-                    <Text className='mt-6 ml-2 text-2xl font-semibold'>
-                        Your Cart
-                    </Text>
+                    <Text className='ml-4 text-2xl font-bold'>Your Cart</Text>
                 </View>
-                {/* Remove All */}
-                <TouchableOpacity className="mr-10 ml-auto">
-                    <Text className="text-gray-700">Remove All</Text>
-                </TouchableOpacity>
-                {/* Cart Item */}
-                <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-                    <View className="bg-gray-100 rounded-lg mx-4 p-3 flex-row items-center mt-10">
-                        <Image
-                            source={{ uri: "https://us-west-2.graphassets.com/cm5sq0qzf0mrk07n0fiaxdrhy/cm5uvvr5m4ywz07lixruyxgpe" }}
-                            className="w-[60px] h-[60px] rounded-lg"
-                        />
-                        <View className="ml-3 flex-1">
-                            <Text className="font-bold text-lg">Kohaku 90 cm 6 tuổi</Text>
-                            <Text className="text-gray-600 text-sm">Size - 90 cm  |  <Text className="font-semibold">Dainichi Koi Farm</Text></Text>
-                        </View>
-                        <Text className="font-semibold text-lg">$148</Text>
+
+                {/* Cart Items */}
+                <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}>
+                    {cartItems.length > 0 ? cartItems.map((item: any, index: any) => (
+                        <TouchableOpacity
+                            key={index}
+                            className="bg-white rounded-lg shadow-md mx-4 p-4 flex-row items-center mt-5"
+                            onPress={() => toggleCheckbox(item.koiFishId)}
+                            activeOpacity={0.7}
+                        >
+                            <Checkbox
+                                status={selectedItems[item.koiFishId] ? 'checked' : 'unchecked'}
+                                onPress={() => toggleCheckbox(item.koiFishId)}
+                                color="#FF6B00"
+                            />
+                            <Image
+                                source={item.imageUrl ? { uri: item.imageUrl } : require("../../assets/icon/defaultimage.jpg")}
+                                className="w-[70px] h-[70px] rounded-lg shadow-md"
+                                resizeMode='contain'
+                            />
+                            <View className="ml-3 flex-1">
+                                <Text className="font-bold text-lg text-gray-800">{item.name}</Text>
+                                <Text className="text-gray-600 text-sm">Số lượng: {item.quantity}</Text>
+                            </View>
+                            <Text className="font-semibold text-lg text-orange-500">{item.price.toLocaleString()} VND</Text>
+                        </TouchableOpacity>
+                    )) : (
+                        <Text className="text-center text-gray-500 mt-10">Giỏ hàng trống</Text>
+                    )}
+                </ScrollView>
+
+
+                {/* Checkout Section */}
+                <View className='relative bottom-0 left-0 right-0 bg-white p-5 shadow-lg '>
+
+                    {/* Shopee Voucher Section */}
+                    <View className='flex-row items-center justify-between mb-2'>
+                        <Text className='text-gray-700 font-semibold'>Koi Farm Shop Membership</Text>
+                        <TouchableOpacity className='bg-orange-100 px-3 py-1 rounded-md'>
+                            <Text className='text-yellow-600 text-sm font-medium'>Gold</Text>
+                        </TouchableOpacity>
                     </View>
-                    <View className="bg-gray-100 rounded-lg mx-4 p-3 flex-row items-center mt-10">
-                        <Image
-                            source={{ uri: "https://us-west-2.graphassets.com/cm5sq0qzf0mrk07n0fiaxdrhy/cm5uvvr5m4ywz07lixruyxgpe" }}
-                            className="w-[60px] h-[60px] rounded-lg"
-                        />
-                        <View className="ml-3 flex-1">
-                            <Text className="font-bold text-lg">Kohaku 90 cm 6 tuổi</Text>
-                            <Text className="text-gray-600 text-sm">Size - 90 cm  |  <Text className="font-semibold">Dainichi Koi Farm</Text></Text>
+
+                    {/* Use Membership */}
+                    <View className="flex-row items-center justify-between mb-3">
+                        <View className="flex-row items-center">
+                            <Entypo name="wallet" size={20} color="#FFA500" />
+                            <Text className="ml-2 text-gray-700 font-medium">5% discount by membership</Text>
                         </View>
-                        <Text className="font-semibold text-lg">$148</Text>
+                        <Checkbox status="checked" color="#FF6B00" />
                     </View>
-                    {/* Membership */}
-                    <View className="mt-16 px-4">
-                        <Text className="text-2xl font-semibold">Membership:</Text>
-                        <Text className="text-5xl font-extrabold text-yellow-500 text-center">GOLD</Text>
-                    </View>
-                    {/* Summary */}
-                    <View className="mt-10 px-4">
-                        <View className="flex-row justify-between">
-                            <Text className="text-gray-700 text-xl">Subtotal</Text>
-                            <Text className="text-gray-700 text-xl">$148</Text>
+
+                    {/* Select All & Total Price Section */}
+                    <View className='flex-row items-center justify-between mb-3'>
+                        <View className='flex-row items-center'>
+                            <Checkbox status="unchecked" color="#FF6B00" />
+                            <Text className='ml-2 text-gray-700 font-semibold'>Tất cả</Text>
                         </View>
-                        <View className="flex-row justify-between mt-1">
-                            <Text className="text-gray-700 text-xl">Shipping Cost</Text>
-                            <Text className="text-gray-700 text-xl">$8.00</Text>
-                        </View>
-                        <View className="flex-row justify-between mt-1">
-                            <Text className="text-orange-500 font-semibold text-xl">Membership: Gold</Text>
-                            <Text className="text-orange-500 font-semibold text-xl">- $5.00</Text>
-                        </View>
-                        <View className="flex-row justify-between mt-2 border-t border-gray-300 pt-2">
-                            <Text className="font-semibold text-2xl">Total</Text>
-                            <Text className="font-semibold text-2xl">$151</Text>
+                        <View className='items-end'>
+                            <Text className='text-lg font-bold text-orange-600'>
+                                Tổng thanh toán {totalPrice.toLocaleString()} VND
+                            </Text>
+                            <Text className='text-gray-500 text-sm'>Tiết kiệm đ102k</Text>
                         </View>
                     </View>
 
-                </ScrollView>
-                {/* Checkout */}
-                <View className='absolute bottom-5 left-0 right-0 px-5'>
                     <CustomButton title="Check out" handlePress={submit}
-                        containerStyles="mt-auto bg-orange-500 h-14 mr-5 ml-5"
+                        containerStyles="bg-orange-500 h-14 rounded-lg shadow-md mt-5"
                         isLoading={isLoading}
                     />
                 </View>
