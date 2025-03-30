@@ -1,10 +1,10 @@
 import { View, Text } from 'react-native'
 import React from 'react'
 
-export default function OTPSuccess() {
+export default function Breeders() {
     return (
         <View>
-            <Text>OTPSuccess</Text>
+            <Text>Breeders</Text>
         </View>
     )
 }

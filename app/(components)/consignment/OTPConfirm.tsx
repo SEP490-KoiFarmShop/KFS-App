@@ -8,7 +8,7 @@ export default function OTPConfirm() {
     const [otp, setOtp] = useState(["", "", "", ""]);
     const inputs = useRef<TextInput[]>([]);
     const router = useRouter();
-    const { gmail } = useLocalSearchParams();
+    const { gmail, id } = useLocalSearchParams();
 
     const handleChange = (value: string, index: number) => {
         if (isNaN(Number(value))) return;
@@ -29,23 +29,29 @@ export default function OTPConfirm() {
             return;
         }
 
+        const requestData = {
+            email: gmail,
+            otp: otpCode
+        };
+        console.log("Dữ liệu gửi đi:", requestData);
+
         try {
-            const response = await axios.post("https://kfsapis.azurewebsites.net/api/Otp/verify-otp-demo", {
-                email: gmail,
-                otp: otpCode
-            });
+            const response = await axios.post(`https://kfsapis.azurewebsites.net/api/Otp/verify-otp-for-contract?consignmentId=${id}`, requestData);
+
+            console.log("Phản hồi từ server:", response.data);
 
             if (response.status === 200) {
                 Alert.alert("Success", "OTP verified successfully!");
-                router.push("/(components)/OTPSuccess");
+                router.push(`/(components)/consignment/OTPSuccess?id=${id}`);
             } else {
                 Alert.alert("Error", "Invalid OTP. Please try again.");
             }
-        } catch (error) {
+        } catch (error: any) {
+            console.error("Lỗi xác thực OTP:", error.response?.data || error.message);
             Alert.alert("Error", "Failed to verify OTP. Please try again.");
-            console.error("OTP verification error:", error);
         }
     };
+
 
     return (
         <View className="flex-1 bg-white">
@@ -58,7 +64,7 @@ export default function OTPConfirm() {
 
             <View className="flex-1 items-center justify-start p-6 mt-10">
                 <Image
-                    source={require("../../assets/Logo_Team.jpg")}
+                    source={require("../../../assets/Logo_Team.jpg")}
                     className="w-64 h-64 my-2"
                     resizeMode="contain"
                 />

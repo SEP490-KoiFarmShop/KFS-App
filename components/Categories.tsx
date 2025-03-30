@@ -10,8 +10,8 @@ export default function Categories() {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await GlobalApi.getCategories();
-                setCategories(response?.categories);
+                const response = await GlobalApi.getVarieties();
+                setCategories(response);
             } catch (error) {
                 console.error("Error fetching sliders:", error);
             }
@@ -31,7 +31,7 @@ export default function Categories() {
                             <Image
                                 className="w-[75px] h-[75px] rounded-full"
                                 resizeMode="contain"
-                                source={{ uri: item?.icon?.url }}
+                                source={{ uri: item.imageUrl }}
                             />
                             <Text className="text-center mt-2">{item.name}</Text>
                         </TouchableOpacity>

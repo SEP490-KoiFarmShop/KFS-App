@@ -37,7 +37,7 @@ export default function TableScreen({ status }: any) {
             },
           }
         );
-        console.log("Data:", status);
+        console.log(response.data)
         setConsignments(response.data);
       } catch (error) {
         console.error("Error fetching consignments:", error);

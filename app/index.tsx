@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { View } from "react-native";
+import { ActivityIndicator } from "react-native-paper";
 
 export default function Index() {
     const router = useRouter();
@@ -14,16 +15,8 @@ export default function Index() {
     }, [router]);
 
     return (
-        <View style={styles.container}>
-            <Text>Đang chuyển hướng...</Text>
+        <View className="flex items-center justify-center">
+            <ActivityIndicator size="large" color="#FF6600" />
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-});

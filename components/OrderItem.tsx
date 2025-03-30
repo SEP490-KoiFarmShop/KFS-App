@@ -7,12 +7,12 @@ import { useRouter } from 'expo-router';
 export default function OrderItem({ item }: any) {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
-
+    console.log(item)
     const handleRePayment = async () => {
         try {
             setLoading(true);
             const response = await axios.get(
-                `https://kfsapis.azurewebsites.net/${item.id}/re-payment`,
+                `https://kfsapis.azurewebsites.net/api/v1/orders/${item.id}/re-payment`,
             );
 
             if (response.data.return_code === 1) {

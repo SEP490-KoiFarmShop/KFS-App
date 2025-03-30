@@ -32,15 +32,19 @@ export default function ConsignItem({ item }: any) {
                 <Text className="text-gray-500 text-sm">
                     <Text className="font-semibold text-gray-700">Notes:</Text> {item.notes}
                 </Text>
+                <Text className="text-sm">
+                    <Text className="font-semibold text-gray-700">Final Amount: </Text>
+                    <Text className="text-green-600 font-semibold">
+                        {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.finalPayoutAmount)}
+                    </Text>
+                </Text>
             </View>
 
             {/* Buttons */}
             {item.status === "Approved" && (
                 <View className="flex-row justify-end mt-3">
-                    {/* <TouchableOpacity className="border border-red-500 px-3 py-1 rounded-md mr-2">
-                            <Text className="text-red-500 font-semibold"></Text>
-                        </TouchableOpacity> */}
-                    <TouchableOpacity className="bg-red-500 px-3 py-1 rounded-md" onPress={() => router.push(`/(components)/consignment/ConsignmentDetail?id=${item.id}`)}>
+
+                    <TouchableOpacity className="bg-red-500 px-3 py-1 rounded-md ml-2" onPress={() => router.push(`/(components)/consignment/ConsignmentDetail?id=${item.id}`)}>
                         <Text className="text-white font-semibold">View detail</Text>
                     </TouchableOpacity>
                 </View>

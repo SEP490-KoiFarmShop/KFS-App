@@ -10,7 +10,7 @@ const TabIcon = ({ icon, color, name, focused, iconComponent }: any) => {
     return (
         <View className='items-center justify-center mt-5 w-20'>
             {iconComponent ? (
-                <View className='w-6 h-6 mb-1'>
+                <View className='w-7 h-7 mb-1'>
                     {iconComponent}
                 </View>
             ) : (
@@ -37,13 +37,13 @@ const TabsLayout = () => {
             <Tabs
                 screenOptions={{
                     tabBarShowLabel: false,
-                    tabBarActiveTintColor: "#000000", // Màu chữ và biểu tượng khi tab được chọn (màu đen)
-                    tabBarInactiveTintColor: "#000000", // Màu chữ và biểu tượng khi tab không được chọn (màu đen)
+                    tabBarActiveTintColor: "#000000",
+                    tabBarInactiveTintColor: "#000000",
                     tabBarStyle: {
-                        backgroundColor: "#FFFFFF", // Nền màu trắng
-                        borderTopWidth: 1, // Độ dày viền
-                        borderTopColor: "#000000", // Viền màu đen
-                        height: 58 // Chiều cao của thanh footer
+                        backgroundColor: "#FFFFFF",
+                        borderTopWidth: 1,
+                        borderTopColor: "#000000",
+                        height: 58
                     }
                 }}
             >
@@ -98,7 +98,7 @@ const TabsLayout = () => {
                         headerShown: false,
                         tabBarIcon: ({ color, focused }) => (
                             <TabIcon
-                                iconComponent={<Ionicons name="hammer" size={24} color={color} />} // Sử dụng `color`
+                                iconComponent={<Ionicons name="hammer-outline" size={24} color="black" />}
                                 color={color}
                                 name="Auction"
                                 focused={focused}
@@ -113,7 +113,7 @@ const TabsLayout = () => {
                         headerShown: false,
                         tabBarIcon: ({ color, focused }) => (
                             <TabIcon
-                                iconComponent={<AntDesign name="profile" size={24} color={color} />} // Sử dụng `color`
+                                iconComponent={<AntDesign name="profile" size={24} color={color} />}
                                 color={color}
                                 name="Profile"
                                 focused={focused}

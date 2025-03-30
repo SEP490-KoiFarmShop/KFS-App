@@ -42,7 +42,7 @@ export default function KoiDetailScreen() {
       const jwtToken = parsedToken?.accessToken;
       // console.log(koisById?.id)
       const response = await axios.post(
-        "https://kfsapis.azurewebsites.net/api/v1/koi-fishes/cart",
+        "https://kfsapis.azurewebsites.net/api/v1/carts/product",
         {
           koiFishId: koisById?.id
         },
@@ -68,13 +68,17 @@ export default function KoiDetailScreen() {
     const fetchKoiDetail = async () => {
       try {
         const apiData = await GlobalApi.getKoisById(id);
-        // console.log("API Response:", apiData);
+        console.log("API Response:", apiData.imageUrl);
 
         if (!apiData || Object.keys(apiData).length === 0) {
-          // console.warn("No Koi found for ID:", id); 
           setKoisById(null);
           return;
         }
+
+        // Kiểm tra imageUrl có phải là mảng không
+        const imageUrls = Array.isArray(apiData.imageUrl)
+          ? apiData.imageUrl.map((url: string) => ({ url }))
+          : [{ url: require("../../assets/icon/defaultimage.jpg") }];
 
         const formattedKoi: Koi = {
           id: apiData.id?.toString() || "",
@@ -84,7 +88,7 @@ export default function KoiDetailScreen() {
           size: apiData.size || "Unknown",
           price: apiData.price || 0,
           breeder: apiData.breeders || "Unknown",
-          image: apiData.imageUrl ? [{ url: apiData.imageUrl }] : [{ url: require('../../assets/icon/defaultimage.jpg') }],
+          image: imageUrls, // Đã sửa đổi ở đây
           category: { name: apiData.type || "Unknown" },
           bornDate: apiData.bornDate || "Unknown",
           varieties: apiData.varieties || "Unknown",
@@ -98,6 +102,7 @@ export default function KoiDetailScreen() {
         setIsLoading(false);
       }
     };
+
 
     fetchKoiDetail();
   }, [id]);
@@ -136,26 +141,27 @@ export default function KoiDetailScreen() {
 
   return (
     <View className="flex-1">
-      <View className="flex-row">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {(koisById.image.length > 0 ? koisById.image : [{ url: require("../../assets/icon/defaultimage.jpg") }])
-            .map((img, index) => (
-              <Image
-                key={index}
-                className="w-[250px] h-[300px] mt-5 mr-5"
-                source={typeof img.url === "string" ? { uri: img.url } : img.url}
-                resizeMode="contain"
-              />
-            ))}
-        </ScrollView>
-      </View>
+
 
       <ScrollView
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
+        <View className="flex-row">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="ml-5">
+            {(koisById.image.length > 0 ? koisById.image : [{ url: require("../../assets/icon/defaultimage.jpg") }])
+              .map((img, index) => (
+                <Image
+                  key={index}
+                  className="w-[250px] h-[300px] mt-5 mr-5"
+                  source={typeof img.url === "string" ? { uri: img.url } : img.url}
+                  resizeMode="contain"
+                />
+              ))}
+          </ScrollView>
+        </View>
         <View className="m-5">
-          <Text className="font-bold text-2xl text-black ml-5">
+          <Text className="font-bold text-2xl text-black ml-2">
             {koisById.name}
           </Text>
           <Text className="font-semibold text-orange-600 mt-3 text-xl ml-5">

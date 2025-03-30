@@ -92,28 +92,28 @@ export default function ConsignmentDetail() {
             Alert.alert("Error", "Failed to reject consignment.");
         }
     };
-    console.log(koisById?.id)
+
     const handleAccepted = async () => {
         try {
-            const userData = await AsyncStorage.getItem("userData");
-            if (!userData) {
-                router.push("/(auth)/LoginScreen");
-                return;
-            }
-            const parsedToken = JSON.parse(userData);
-            const jwtToken = parsedToken?.accessToken;
+            // const userData = await AsyncStorage.getItem("userData");
+            // if (!userData) {
+            //     router.push("/(auth)/LoginScreen");
+            //     return;
+            // }
+            // const parsedToken = JSON.parse(userData);
+            // const jwtToken = parsedToken?.accessToken;
 
-            await axios.put(`https://kfsapis.azurewebsites.net/api/Consignment/ChangeStatusForCustomer`, null, {
-                params: {
-                    consignmentId: koisById?.id,
-                    status: "Accepted",
-                },
-                headers: {
-                    Authorization: `Bearer ${jwtToken}`,
-                    "Content-Type": "application/json",
-                },
-            });
-            Alert.alert("Success", "Consignment has been rejected.");
+            // await axios.put(`https://kfsapis.azurewebsites.net/api/Consignment/ChangeStatusForCustomer`, null, {
+            //     params: {
+            //         consignmentId: koisById?.id,
+            //         status: "Accepted",
+            //     },
+            //     headers: {
+            //         Authorization: `Bearer ${jwtToken}`,
+            //         "Content-Type": "application/json",
+            //     },
+            // });
+            Alert.alert("Success", "Consignment has been accepted.");
             router.push(`/(components)/consignment/ViewContract?id=${id}`)
         } catch (error) {
             console.error("Error rejecting consignment:", error);

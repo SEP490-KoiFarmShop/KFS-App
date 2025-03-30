@@ -6,7 +6,7 @@ import DetailKoiItem from '@/components/DetailKoiItem';
 import SearchComponent from '@/components/Search';
 import { ActivityIndicator, MD2Colors } from 'react-native-paper';
 import Entypo from '@expo/vector-icons/Entypo';
-
+import { FontAwesome } from '@expo/vector-icons';
 
 interface Koi {
     id: number;
@@ -31,22 +31,25 @@ export default function KoiFishAll() {
     const [loading, setLoading] = useState(false);
     const [hasNextPage, setHasNextPage] = useState(true);
     const [searchValue, setSearchValue] = useState("");
-
+    const [gender, setGender] = useState("");
+    const [type, setType] = useState("");
+    const [variety, setVariety] = useState("");
+    const [breeder, setBreeder] = useState("");
+    const [sortOrder, setSortOrder] = useState("");
     const numColumns = 2;
+    const [selectedOption, setSelectedOption] = useState("Newest");
+    const [priceSortOrder, setPriceSortOrder] = useState("asc");
 
     useEffect(() => {
         setPage(1);
-        fetchKoisList(1, searchValue, true);
-    }, [searchValue]);
+        fetchKoisList(1, searchValue, gender, type, variety, breeder, sortOrder, true);
+    }, [searchValue, gender, type, variety, breeder, sortOrder]);
 
-    const fetchKoisList = async (pageNumber = 1, search = "", isSearch = false) => {
+    const fetchKoisList = async (pageNumber = 1, search = "", gender = "", type = "", variety = "", breeder = "", sortOrder = "", isSearch = false) => {
         if (loading || (!hasNextPage && !isSearch)) return;
         setLoading(true);
-
         try {
-            const response = await GlobalApi.getKoisList(pageNumber, 10, search);
-            // console.log("API Response:", response.data);
-
+            const response = await GlobalApi.getKoisList(pageNumber, 10, search, gender, type, variety, breeder, sortOrder);
             if (response?.data?.length > 0) {
                 setKoisList(prevList => isSearch ? response.data : [...prevList, ...response.data]);
                 setPage(pageNumber);
@@ -72,12 +75,47 @@ export default function KoiFishAll() {
                     Koi Fish
                 </Text>
             </View>
+            <View className="flex-row items-center border-b border-gray-300 px-4 py-2">
+                <TouchableOpacity
+                    onPress={() => {
+                        setSelectedOption("Newest");
+                        setSortOrder("updatedAt desc");
+                    }}
+                    className="flex-1 items-center"
+                >
+                    <Text className={selectedOption === "Newest" ? "text-red-500 font-semibold text-lg" : "text-gray-500 text-lg"}>
+                        Newest
+                    </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    onPress={() => {
+                        setSelectedOption("Giá");
+                        const newSortOrder = priceSortOrder === "asc" ? "price desc" : "price";
+                        setPriceSortOrder(priceSortOrder === "asc" ? "desc" : "asc");
+                        setSortOrder(newSortOrder);
+                    }}
+                    className="flex-1 flex-row items-center justify-center"
+                >
+                    <Text className={selectedOption === "Giá" ? "text-red-500 font-semibold text-lg" : "text-gray-500 text-lg"}>
+                        Giá
+                    </Text>
+                    <FontAwesome name={priceSortOrder === "asc" ? "sort-asc" : "sort-desc"} size={20} color="gray" className="ml-2" />
+                </TouchableOpacity>
+            </View>
             <FlatList
                 key={`flatlist-${numColumns}`}
                 keyExtractor={(item) => item.id.toString()}
                 data={koisList}
                 numColumns={numColumns}
-                ListHeaderComponent={<SearchComponent onSearch={setSearchValue} />}
+                ListHeaderComponent={<SearchComponent onSearch={(search: any, gender: any, type: any, variety: any, breeder: any, sortOrder: any) => {
+                    setSearchValue(search);
+                    setGender(gender);
+                    setVariety(variety);
+                    setBreeder(breeder);
+                    setType(type);
+                    setSortOrder(sortOrder);
+                }} />}
                 renderItem={({ item }) => (
                     <TouchableOpacity
                         style={{ flex: 1, marginRight: 10 }}
@@ -86,7 +124,11 @@ export default function KoiFishAll() {
                         <DetailKoiItem koi={item} />
                     </TouchableOpacity>
                 )}
-                onEndReached={() => fetchKoisList(page + 1, searchValue)}
+                onEndReached={() => {
+                    if (hasNextPage) {
+                        fetchKoisList(page + 1, searchValue, gender, type, variety, breeder, sortOrder);
+                    }
+                }}
                 onEndReachedThreshold={0.5}
                 showsVerticalScrollIndicator={false}
                 ListFooterComponent={loading ? (

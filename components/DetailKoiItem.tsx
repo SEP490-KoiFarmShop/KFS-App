@@ -34,7 +34,7 @@ export default function DetailKoiItem({ koi }: DetailKoiItemProps) {
                 <Text>
                     Size: {koi?.size ? `${koi.size} cm` : 'Unknown'}
                 </Text>
-                <Text className="font-bold text-xl mt-3">
+                <Text className="font-semibold text-orange-500 text-xl mt-3">
                     {formatPrice(koi?.price || 0)} VNĐ
                 </Text>
             </View>

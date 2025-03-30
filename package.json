@@ -14,6 +14,7 @@
     "@gluestack-ui/nativewind-utils": "^1.0.26",
     "@gluestack-ui/overlay": "^0.1.16",
     "@gluestack-ui/toast": "^1.0.8",
+    "@microsoft/signalr": "^8.0.7",
     "@react-native-async-storage/async-storage": "^2.1.2",
     "@react-native-community/datetimepicker": "8.2.0",
     "@react-native-picker/picker": "^2.11.0",
@@ -47,9 +48,9 @@
     "react-native-svg": "^15.2.0",
     "react-native-tab-view": "^4.0.5",
     "react-native-vector-icons": "^10.2.0",
+    "react-native-view-shot": "~4.0.3",
     "react-native-webview": "^13.13.4",
-    "tailwindcss": "^3.4.17",
-    "react-native-view-shot": "~4.0.3"
+    "tailwindcss": "^3.4.17"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

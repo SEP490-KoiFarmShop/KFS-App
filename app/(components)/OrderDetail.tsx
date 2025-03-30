@@ -239,12 +239,12 @@ export default function OrderDetail() {
                                 {orderData.paymentDetails["Shipping Cost"].toLocaleString()} VND
                             </Text>
                         </View>
-                        <View className="flex-row justify-between mt-2">
+                        {/* <View className="flex-row justify-between mt-2">
                             <Text className="text-orange-500 font-semibold text-lg">Membership Discount</Text>
                             <Text className="text-orange-500 font-semibold text-lg">
                                 - {orderData.paymentDetails["Membership Discount"].toLocaleString()} VND
                             </Text>
-                        </View>
+                        </View> */}
                         <View className="flex-row justify-between mt-3 border-t border-gray-300 pt-2">
                             <Text className="font-bold text-xl">Total</Text>
                             <Text className="font-bold text-xl text-orange-500">

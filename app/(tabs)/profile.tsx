@@ -54,7 +54,9 @@ export default function Profile() {
       <View className="bg-white p-4 mt-2">
         <Text className="font-semibold">Tiện ích của tôi</Text>
         <View className="flex-row justify-around mt-3">
-          <IconLabel icon="credit-card" label="Ví ShopeePay" />
+          <TouchableOpacity onPress={() => router.push(`/(components)/Wallet`)}>
+            <IconLabel icon="credit-card" label="Ví ShopeePay" />
+          </TouchableOpacity>
           <IconLabel icon="money" label="SPayLater" />
           <IconLabel icon="gift" label="Shopee Xu" />
           <IconLabel icon="local-offer" label="Kho Voucher" library="MaterialIcons" />

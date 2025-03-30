@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { View, TextInput, Text } from "react-native";
+import { View, Text, TextInput } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { ActivityIndicator } from 'react-native-paper';
 import { Picker } from "@react-native-picker/picker";
-import CustomButton from "./CustomButton";
-import { ActivityIndicator } from "react-native-paper";
-import GlobalApi from "@/utils/GlobalApi";
+import GlobalApi from '@/utils/GlobalApi';
+import CustomButton from './CustomButton';
 
-const SearchComponent = ({ onSearch }: any) => {
+export default function SearchAuction({ onSearch }: any) {
     const [type, setType] = useState("");
     const [sex, setSex] = useState("");
     const [breeders, setBreeders] = useState([]);
@@ -152,5 +152,3 @@ const SearchComponent = ({ onSearch }: any) => {
         </View >
     );
 };
-
-export default SearchComponent;

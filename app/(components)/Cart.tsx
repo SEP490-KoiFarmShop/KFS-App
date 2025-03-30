@@ -38,6 +38,7 @@ export default function Cart() {
                         },
                     }
                 );
+                console.log(response.data.items)
 
                 if (response.data && response.data.items) {
                     setCartItems(response.data.items);
@@ -55,7 +56,9 @@ export default function Cart() {
 
     const submit = async () => {
         try {
-            const selectedKoiFishIds = Object.keys(selectedItems).filter(id => selectedItems[id]);
+            const selectedKoiFishIds = Object.keys(selectedItems)
+                .filter(id => selectedItems[id])
+                .map(id => Number(id));
 
             if (selectedKoiFishIds.length === 0) {
                 console.warn("Không có sản phẩm nào được chọn.");
@@ -72,9 +75,15 @@ export default function Cart() {
             const parsedToken = JSON.parse(token);
             const jwtToken = parsedToken?.accessToken;
 
-            const queryString = selectedKoiFishIds.map(id => `koi-fish-ids=${id}`).join("&");
+            console.log("Selected Koi Fish IDs:", selectedKoiFishIds);
+            if (selectedKoiFishIds.length === 0) {
+                console.error("Không có sản phẩm nào được chọn.");
+                return;
+            }
 
+            const queryString = selectedKoiFishIds.map(id => `koi-fish-ids=${id}`).join("&");
             const url = `https://kfsapis.azurewebsites.net/api/v1/orders/check-out?${queryString}`;
+            console.log("Checkout URL:", url);
 
             const response = await axios.get(url, {
                 headers: {
@@ -82,6 +91,7 @@ export default function Cart() {
                     "Content-Type": "application/json",
                 },
             });
+
             router.push(`/OrderDetail?orderId=${selectedKoiFishIds.join("x")}`);
         } catch (error: any) {
             console.error("Lỗi khi checkout:", error.response);
@@ -91,12 +101,10 @@ export default function Cart() {
     };
 
 
-
-    const toggleCheckbox = (koiFishId: string) => {
-        // console.log("Toggling item ID:", koiFishId);
+    const toggleCheckbox = (productId: number) => {
         setSelectedItems((prev) => ({
             ...prev,
-            [koiFishId]: !prev[koiFishId],
+            [productId]: !prev[productId],
         }));
     };
 
@@ -117,12 +125,12 @@ export default function Cart() {
                         <TouchableOpacity
                             key={index}
                             className="bg-white rounded-lg shadow-md mx-4 p-4 flex-row items-center mt-5"
-                            onPress={() => toggleCheckbox(item.koiFishId)}
+                            onPress={() => toggleCheckbox(item.productId)}
                             activeOpacity={0.7}
                         >
                             <Checkbox
-                                status={selectedItems[item.koiFishId] ? 'checked' : 'unchecked'}
-                                onPress={() => toggleCheckbox(item.koiFishId)}
+                                status={selectedItems[item.productId] ? 'checked' : 'unchecked'}
+                                onPress={() => toggleCheckbox(item.productId)}
                                 color="#FF6B00"
                             />
                             <Image
