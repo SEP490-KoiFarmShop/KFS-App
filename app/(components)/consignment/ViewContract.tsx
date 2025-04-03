@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { TextInput } from "react-native-paper";
 import axios from "axios";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -12,85 +12,69 @@ export default function ContractDetail() {
     const today = new Date();
     const router = useRouter();
     const [email, setEmail] = useState("");
-    const formattedDate = `${today.getDate()} tháng ${today.getMonth() + 1} năm ${today.getFullYear()}`;
+    const [customerData, setCustomerData] = useState<any>(null);
+
     const contractRef = useRef(null);
 
     const contractContent = `
-        HỢP ĐỒNG KÝ GỬI CÁ
-        Ngày ${formattedDate}
-
-        BÊN A (BÊN KÝ GỬI)
-        - Họ và tên: Nguyễn Văn A
-        - Số CMND/CCCD: ___________
-        - Địa chỉ: ___________
-        - Số điện thoại: ___________
-
-        BÊN B (BÊN NHẬN KÝ GỬI)
-        - Tên cửa hàng: Koi Farm Shop
-        - Địa chỉ: 7 Đ. D1, Long Thạnh Mỹ, Thủ Đức, Hồ Chí Minh
-        - Số điện thoại: 028 7300 5588
-
-        ĐIỀU 1: ĐỐI TƯỢNG HỢP ĐỒNG
-        - Loại cá: ___________
-        - Đặc điểm nhận diện: ___________
-        - Giá ký gửi: 1.200 USD
-
-        ĐIỀU 2: QUYỀN VÀ NGHĨA VỤ CÁC BÊN
-        - Bên A: Giám sát cá, thanh toán phí dịch vụ.
-        - Bên B: Đảm bảo môi trường sống, chịu trách nhiệm tổn thất.
-
-        ĐIỀU 3: PHƯƠNG THỨC THANH TOÁN
-        - Số tiền: 1.200 USD.
-
-        ĐIỀU 4: VI PHẠM HỢP ĐỒNG
-        - Vi phạm hợp đồng sẽ bồi thường theo thoả thuận.
-
-        ĐIỀU 5: ĐIỀU KHOẢN CHUNG
-        - Hợp đồng có hiệu lực từ ngày ký.
-    `;
-
-    // const uploadImage = async (imageUri: string) => {
-    //     try {
-    //         const fileType = "image/png";
-
-    //         const formData = new FormData();
-    //         formData.append("file", {
-    //             uri: imageUri,
-    //             name: "contract.png",
-    //             type: fileType,
-    //         } as any);
-
-    //         const response = await axios.post("https://kfsapis.azurewebsites.net/api/v1/media", formData, {
-    //             headers: {
-    //                 "Content-Type": "multipart/form-data",
-    //             },
-    //         });
-
-    //         console.log("Upload thành công:", response.data);
-    //         Alert.alert("Thành công", "Hợp đồng đã được lưu!");
-
-    //     } catch (error) {
-    //         Alert.alert("Lỗi", "Không thể lưu hợp đồng!");
-    //         console.error("Lỗi upload ảnh:", error);
-    //     }
-    // };
-
-    // const sendOtp = async () => {
-    //     if (!email) {
-    //         Alert.alert("Lỗi", "Vui lòng nhập email");
-    //         return;
-    //     }
-    //     try {
-    //         const response = await axios.post("https://kfsapis.azurewebsites.net/api/Otp/send-otp", {
-    //             email: email,
-    //         });
-    //         Alert.alert("Thành công", "OTP đã được gửi đến email của bạn!");
-    //         router.push(`/(components)/OTPConfirm?gmail=${email}`)
-    //     } catch (error) {
-    //         Alert.alert("Lỗi", "Không thể gửi OTP. Vui lòng thử lại!");
-    //         console.error("Lỗi gửi OTP:", error);
-    //     }
-    // };
+    <html>
+    <head>
+        <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1, h2 { text-align: center; }
+            .section { margin-bottom: 20px; }
+            .signature { display: flex; justify-content: space-between; margin-top: 40px; }
+            .signature div { text-align: center; }
+        </style>
+    </head>
+    <body>
+        <h1>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</h1>
+        <h2>Độc lập – Tự do – Hạnh phúc</h2>
+        <h2>GIẤY UỶ QUYỀN</h2>
+        <div class="section">
+            <h3>I. BÊN UỶ QUYỀN</h3>
+            <p>Họ tên: ${customerData ? customerData.fullName : "Đang tải..."}</p>
+            <p>Địa chỉ: ${customerData?.address || "Không xác định"}</p>
+            <p>Số CCCD: ${customerData?.phoneNumber || "Không xác định"}</p>
+            <p>Ngày cấp: Không xác định</p>
+            <p>Quốc tịch: Việt Nam</p>
+        </div>
+        <div class="section">
+            <h3>II. BÊN ĐƯỢC UỶ QUYỀN</h3>
+            <p>Họ tên: Phan Thanh Khải</p>
+            <p>Địa chỉ: S1.01 Vinhomes Grand Park, Tp. Thủ Đức, TP. Hồ Chí Minh</p>
+            <p>Số CMND: 9876545678 cấp ngày: 21/01/2018</p>
+            <p>Nơi cấp: tại Công an tỉnh Tp. Hồ Chí Minh</p>
+            <p>Quốc tịch: Việt Nam</p>
+        </div>
+        <div class="section">
+            <h3>III. NỘI DUNG UỶ QUYỀN</h3>
+            <p>Bên Uỷ quyền đồng ý ủy quyền cho Bên Nhận Ủy quyền thực hiện các hành vi sau đây:</p>
+            <ul>
+                <li>Tiếp nhận, định đoạt và định giả tài phẩm từ cá Koi do Bên Uỷ quyền gửi.</li>
+                <li>Được phép kiểm tra và nhận vật phẩm nêu trên khi hoàn thành thủ tục bán/đấu giá.</li>
+                <li>Nhận tiền hoàn lại từ việc bán/đấu giá.</li>
+                <li>Thay mặt bên uỷ quyền thực hiện, giám sát toàn bộ thủ tục bàn giao vật phẩm.</li>
+            </ul>
+        </div>
+        <div class="section">
+            <h3>IV. CAM KẾT</h3>
+            <p>- Hai bên cam kết sẽ hoàn toàn chịu trách nhiệm trước Pháp luật về mọi thông tin uỷ quyền ở trên</p>
+            <p>- Mọi tranh chấp phát sinh giữa quyền uỷ quyền và bên được uỷ quyền sẽ do hai bên tự giải quyết</p>
+        </div>
+        <div class="signature">
+            <div>
+                <p>BÊN UỶ QUYỀN</p>
+                <p>(Ký và ghi rõ họ tên)</p>
+            </div>
+            <div>
+                <p>BÊN ĐƯỢC UỶ QUYỀN</p>
+                <p>(Ký và ghi rõ họ tên)</p>
+            </div>
+        </div>
+    </body>
+    </html>
+`;
 
     const captureContract = async () => {
         try {
@@ -112,6 +96,7 @@ export default function ContractDetail() {
             return null;
         }
     };
+
 
 
     const uploadImage = async (imageUri: string) => {
@@ -143,7 +128,8 @@ export default function ContractDetail() {
             return;
         }
         try {
-            await axios.post("https://kfsapis.azurewebsites.net/api/Otp/send-otp", { email });
+            console.log(email);
+            await axios.post(`https://kfsapis.azurewebsites.net/api/Otp/send-otp`, { email: email });
             Alert.alert("Thành công", "OTP đã được gửi đến email của bạn!");
             router.push(`/(components)/consignment/OTPConfirm?gmail=${email}&id=${id}`);
         } catch (error) {
@@ -255,7 +241,7 @@ export default function ContractDetail() {
                 Alert.alert("Lỗi", "Không thể tải lên hình ảnh hợp đồng!");
                 return;
             }
-            await handleAccepted();
+            // await handleAccepted();
             await createContract(fileUrl);
             await sendOtp();
 
@@ -265,63 +251,112 @@ export default function ContractDetail() {
         }
     };
 
+    useEffect(() => {
+        const fetchCustomerData = async () => {
+            try {
+                const userData = await AsyncStorage.getItem("userData");
+                if (!userData) {
+                    router.push("/(auth)/LoginScreen");
+                    return;
+                }
+
+                const parsedToken = JSON.parse(userData);
+                const id = parsedToken?.id;
+                const jwtToken = parsedToken?.accessToken;
+                const response = await axios.get("https://kfsapis.azurewebsites.net/api/v1/auth/GetCustomerDetail",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${jwtToken}`,
+                            "Content-Type": "application/json",
+                        },
+                    })
+
+                setCustomerData(response.data);
+            } catch (error) {
+                console.error("Lỗi khi lấy dữ liệu khách hàng:", error);
+                Alert.alert("Lỗi", "Không thể lấy thông tin khách hàng.");
+            }
+        };
+        fetchCustomerData();
+    }, []);
+
     return (
         <View className="flex-1 bg-white p-4">
-            <View className="items-center border-b pb-3 mb-3">
-                <Text className="text-xl font-bold">HỢP ĐỒNG KÝ GỬI CÁ</Text>
-                <Text className="text-gray-500">Ngày {formattedDate}</Text>
-            </View>
-
             {/* Bọc hợp đồng trong ViewShot */}
             <ViewShot ref={contractRef} options={{ format: "png", quality: 0.8 }} style={{ flex: 1, backgroundColor: "white", padding: 10 }} >
                 <ScrollView className="flex-1">
-                    <View className="mb-4">
-                        <Text className="font-bold">BÊN A (BÊN KÝ GỬI)</Text>
-                        <Text>- Họ và tên: Nguyễn Văn A</Text>
-                        <Text>- Số CMND/CCCD: ___________</Text>
-                        <Text>- Địa chỉ: ___________</Text>
-                        <Text>- Số điện thoại: ___________</Text>
-                    </View>
+                    <View className="p-4 bg-white">
 
-                    <View className="mb-4">
-                        <Text className="font-bold">BÊN B (BÊN NHẬN KÝ GỬI)</Text>
-                        <Text>- Tên cửa hàng: Koi Farm Shop</Text>
-                        <Text>- Địa chỉ: 7 Đ. D1, Long Thạnh Mỹ, Thủ Đức, Hồ Chí Minh</Text>
-                        <Text>- Số điện thoại: 028 7300 5588</Text>
-                    </View>
+                        {/* Document title */}
+                        <View className="items-center mb-4">
+                            <Text className="text-xl font-bold">CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</Text>
+                            <Text className="text-xl font-bold">Độc lập – Tự do – Hạnh phúc</Text>
+                        </View>
 
-                    <View className="mb-4">
-                        <Text className="font-bold">ĐIỀU 1: ĐỐI TƯỢNG HỢP ĐỒNG</Text>
-                        <Text>1. Bên A đồng ý ký gửi cá với thông tin như sau:</Text>
-                        <Text>- Loại cá: ___________</Text>
-                        <Text>- Đặc điểm nhận diện: ___________</Text>
-                        <Text>- Giá ký gửi: 1.200 USD</Text>
-                    </View>
+                        <View className="items-center mb-6">
+                            <Text className="text-lg font-bold">GIẤY UỶ QUYỀN</Text>
+                            <Text className="text-sm">(Dành cho cá nhân)</Text>
+                        </View>
 
-                    <View className="mb-4">
-                        <Text className="font-bold">ĐIỀU 2: QUYỀN VÀ NGHĨA VỤ CÁC BÊN</Text>
-                        <Text>1. Quyền và nghĩa vụ của Bên A:</Text>
-                        <Text>- Giám sát cá trong suốt thời gian ký gửi.</Text>
-                        <Text>- Thanh toán đầy đủ phí dịch vụ.</Text>
-                        <Text>2. Quyền và nghĩa vụ của Bên B:</Text>
-                        <Text>- Đảm bảo môi trường sống cho cá.</Text>
-                        <Text>- Chịu trách nhiệm nếu cá bị tổn thất.</Text>
-                    </View>
+                        {/* Document content */}
+                        <Text className="mb-4">
+                            - Căn cứ Bộ Luật Dân sự nước Cộng hoà xã hội chủ nghĩa Việt Nam. - Căn cứ vào các văn bản hiến pháp hiện hành.
+                        </Text>
+                        <Text className="mb-4">
+                            TP. Hồ Chí Minh, ngày 31 tháng 3 năm 2025; chúng tôi gồm có:
+                        </Text>
 
-                    <View className="mb-4">
-                        <Text className="font-bold">ĐIỀU 3: PHƯƠNG THỨC THANH TOÁN</Text>
-                        <Text>- Bên A thanh toán theo kỳ hoặc 1 lần.</Text>
-                        <Text>- Số tiền: 1.200 USD.</Text>
-                    </View>
+                        {/* Section I */}
+                        <Text className="font-bold mb-2">I. BÊN UỶ QUYỀN</Text>
+                        <Text className="mb-1">Họ tên: {customerData ? customerData.fullName : "Đang tải..."}</Text>
+                        <Text className="mb-1">Địa chỉ: {customerData?.address || "Không xác định"}</Text>
+                        <Text className="mb-1">Số CCCD: {customerData?.phoneNumber || "Không xác định"}</Text>
+                        <Text className="mb-1">Ngày cấp: Không xác định</Text>
+                        <Text className="mb-4">Quốc tịch: Việt Nam</Text>
 
-                    <View className="mb-4">
-                        <Text className="font-bold">ĐIỀU 4: VI PHẠM HỢP ĐỒNG</Text>
-                        <Text>- Nếu bên nào vi phạm, bên kia có quyền yêu cầu bồi thường.</Text>
-                    </View>
+                        {/* Section II */}
+                        <Text className="font-bold mb-2">II. BÊN ĐƯỢC UỶ QUYỀN</Text>
+                        <Text className="mb-1">Họ tên: Phan Thanh Khải</Text>
+                        <Text className="mb-1">Địa chỉ: S1.01 Vinhomes Grand Park, Tp. Thủ Đức, TP. Hồ Minh</Text>
+                        <Text className="mb-1">Số CMND: 9876545678 cấp ngày: 21/01/2018</Text>
+                        <Text className="mb-1">Nơi cấp: tại Công an tỉnh Tp. Hồ Chí Minh</Text>
+                        <Text className="mb-4">Quốc tịch: Việt Nam</Text>
 
-                    <View className="mb-4">
-                        <Text className="font-bold">ĐIỀU 5: ĐIỀU KHOẢN CHUNG</Text>
-                        <Text>- Hợp đồng có hiệu lực từ ngày ký.</Text>
+                        {/* Section III */}
+                        <Text className="font-bold mb-2">III. NỘI DUNG UỶ QUYỀN</Text>
+                        <Text className="mb-2">
+                            Bên Uỷ quyền đồng ý ủy quyền cho Bên Nhận Ủy quyền thực hiện các hành vi sau đây:
+                        </Text>
+                        <Text className="mb-1">- Tiếp nhận, định đoạt và định giả tài phẩm từ cá Koi do Bên Uỷ quyền gửi.</Text>
+                        <Text className="mb-1">- Được phép kiểm tra và nhận vật phẩm nêu trên khi hoàn thành thủ tục bán/đấu giá.</Text>
+                        <Text className="mb-1">- Nhận tiền hoàn lại từ việc bán/đấu giá.</Text>
+                        <Text className="mb-4">- Thay mặt bên uỷ quyền thực hiện, giám sát toàn bộ thủ tục bàn giao vật phẩm.</Text>
+
+                        {/* Section IV */}
+                        <Text className="font-bold mb-2">IV. CAM KẾT</Text>
+                        <Text className="mb-2">
+                            - Hai bên cam kết sẽ hoàn toàn chịu trách nhiệm trước Pháp luật về mọi thông tin uỷ quyền ở trên
+                        </Text>
+                        <Text className="mb-6">
+                            - Mọi tranh chấp phát sinh giữa giữa quyền uỷ quyền và bên được uỷ quyền sẽ do hai bên tự giải quyết
+                        </Text>
+
+                        {/* Signature sections */}
+                        <View className="flex-row justify-between mb-4">
+                            <View className="items-center">
+                                <Text className="mb-8">BÊN UỶ QUYỀN</Text>
+                                <Text>Ký và ghi rõ họ tên</Text>
+                            </View>
+                            <View className="items-center">
+                                <Text className="mb-8">BÊN ĐƯỢC UỶ QUYỀN</Text>
+                                <Text>Ký và ghi rõ họ tên</Text>
+                            </View>
+                        </View>
+
+                        {/* Additional note */}
+                        <View className="mt-8">
+                            <Text>Tôi đã đọc các điều khoản chính sách của KFS và đồng ý với các điều khoản.</Text>
+                        </View>
                     </View>
 
                     <View className="mb-4">

@@ -182,6 +182,7 @@ export default function LotDetailScreen() {
                 }
 
                 const apiData = response.data;
+                // console.log(apiData)
                 setAuction(apiData);
                 if (apiData.product) {
                     const product = apiData.product;
@@ -288,9 +289,12 @@ export default function LotDetailScreen() {
         });
     };
 
+    // console.log(lotId)
+
     return (
         <View className="flex-1">
             <View className='flex-row items-center p-5 bg-white shadow-md'>
+                {/* <TouchableOpacity onPress={() => router.push(`/(components)/LotAuction?lotId=${lotId}`)} className='p-2 rounded-full bg-gray-100'> */}
                 <TouchableOpacity onPress={() => router.back()} className='p-2 rounded-full bg-gray-100'>
                     <Entypo name="chevron-thin-left" size={24} color="black" />
                 </TouchableOpacity>
@@ -384,8 +388,9 @@ export default function LotDetailScreen() {
                         <CustomButton
                             title="Bid"
                             handlePress={submit}
-                            containerStyles="bg-orange-500 h-14 rounded-lg shadow-md flex-1 ml-2"
+                            containerStyles={`bg-orange-500 h-14 rounded-lg shadow-md flex-1 ml-2 ${auction?.status !== "Auctioning" ? "opacity-50" : ""}`}
                             isLoading={isLoading}
+                            disabled={auction?.status !== "Auctioning"}
                         />
                     </View>
 

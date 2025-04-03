@@ -112,7 +112,6 @@ const submitConsignment = async (data: any) => {
   const id = parsedToken?.id;
   const jwtToken = parsedToken?.accessToken;
   try {
-    console.log(data)
     const response = await axios.post('https://kfsapis.azurewebsites.net/api/Consignment', data,
       {
         headers: {
@@ -120,6 +119,7 @@ const submitConsignment = async (data: any) => {
           "Content-Type": "application/json",
         },
       })
+    console.log(response)
     alert('Consignment created successfully!');
     return response.data;
   } catch (error) {

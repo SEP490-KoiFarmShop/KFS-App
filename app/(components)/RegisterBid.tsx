@@ -87,7 +87,7 @@ export default function RegisterBid() {
 
             const parsedToken = JSON.parse(userData);
             const jwtToken = parsedToken?.accessToken;
-
+            console.log(lotId)
             const response = await axios.post(
                 `https://kfsapis.azurewebsites.net/api/v1/auctions/lot/register`,
                 {
@@ -198,7 +198,7 @@ export default function RegisterBid() {
 
     return (
         <View className="flex-1 bg-white p-5">
-            <TouchableOpacity onPress={() => router.back()}>
+            <TouchableOpacity onPress={() => router.push(`/(components)/LotDetailScreen?lotId=${lotId}`)}>
                 <View className="flex-row items-center">
                     <Feather name="arrow-left" size={24} color="black" />
                     <Text className="text-lg font-bold ml-3">Register Auction</Text>

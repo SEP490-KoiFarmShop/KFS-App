@@ -1,4 +1,4 @@
-import { ScrollView, View } from 'react-native'
+import { Linking, ScrollView, View } from 'react-native'
 import React from 'react'
 import Header from '@/components/Header'
 import Silder from '@/components/Silder'

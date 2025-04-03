@@ -103,7 +103,7 @@ const getAuctionList = async (
 
     const validSortOrder = sortOrder && sortOrder.trim() !== "" ? sortOrder : "updatedAt desc";
 
-    const url = `${API_BASE_URL}/auctions?status=${status}&from-date=${fromDate}&to-date=${toDate}&search-value=${searchValue}&page-number=${page}&page-size=${pageSize}&order-by=${validSortOrder}`;
+    const url = `${API_BASE_URL}/auctions?status=Live&from-date=${fromDate}&to-date=${toDate}&search-value=${searchValue}&page-number=${page}&page-size=${pageSize}&order-by=${validSortOrder}`;
     try {
         const response = await axios.get(url
             ,

@@ -12,10 +12,10 @@ import TableScreen from "./TableScreen";
 const Tab = createMaterialTopTabNavigator();
 
 const PendingScreen = () => <TableScreen status="Pending" />;
-const CheckedScreen = () => <TableScreen status="Checked" />;
+const RePaymentScreen = () => <TableScreen status="PendingPayout" />;
 const ApprovedScreen = () => <TableScreen status="Approved" />;
 const RejectedScreen = () => <TableScreen status="Rejected" />;
-const CancelledScreen = () => <TableScreen status="Cancelled" />;
+const SuccessScreen = () => <TableScreen status="Reserved" />;
 
 const ConsignmentTabs = () => {
   return (
@@ -29,10 +29,10 @@ const ConsignmentTabs = () => {
       }}
     >
       <Tab.Screen name="Pending" component={PendingScreen} />
-      {/* <Tab.Screen name="Checked" component={CheckedScreen} /> */}
+      <Tab.Screen name="Re-Payment" component={RePaymentScreen} />
       <Tab.Screen name="Approved" component={ApprovedScreen} />
-      {/* <Tab.Screen name="Cancelled" component={CancelledScreen} /> */}
       <Tab.Screen name="Rejected" component={RejectedScreen} />
+      <Tab.Screen name="Success" component={SuccessScreen} />
     </Tab.Navigator>
   );
 };

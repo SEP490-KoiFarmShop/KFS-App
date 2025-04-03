@@ -2,12 +2,12 @@ import { View, Text, TouchableOpacity, Image, Alert, Linking } from 'react-nativ
 import React, { useState } from 'react';
 import axios from 'axios';
 import { ActivityIndicator } from 'react-native-paper';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 export default function OrderItem({ item }: any) {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
-    console.log(item)
+
     const handleRePayment = async () => {
         try {
             setLoading(true);
@@ -38,14 +38,16 @@ export default function OrderItem({ item }: any) {
         }
     };
 
+    const handleDetail = async () => {
+        router.push(`/(components)/order/OrderDetail?orderId=${item.id}`)
+    };
+
     return (
         <View className="bg-white p-4 rounded-lg shadow-md mb-5 ml-5 mr-5">
-            {/* Header */}
             <View className="flex-row justify-end mb-2">
                 <Text className="text-red-500 font-semibold">Status: {item.status}</Text>
             </View>
 
-            {/* Product Info */}
             {item.orderDetails.length > 0 && (
                 <View className="flex-row items-center">
                     <Image
@@ -65,14 +67,12 @@ export default function OrderItem({ item }: any) {
                 </View>
             )}
 
-            {/* Total Amount */}
             <View className="mt-3 items-end">
                 <Text className="text-gray-700 font-semibold text-right">
                     Final Amount: {new Intl.NumberFormat("vi-VN").format(item.finalAmount)} VND
                 </Text>
             </View>
 
-            {/* Buttons */}
             {item.status === "PendingPayment" && (
                 <View className="flex-row justify-end mt-3">
                     <TouchableOpacity
@@ -84,6 +84,22 @@ export default function OrderItem({ item }: any) {
                             <ActivityIndicator size="small" color="#FFF" />
                         ) : (
                             <Text className="text-white font-semibold">Re payment</Text>
+                        )}
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            {item.status !== "PendingPayment" && (
+                <View className="flex-row justify-end mt-3">
+                    <TouchableOpacity
+                        className="bg-orange-500 px-3 py-1 rounded-md"
+                        onPress={handleDetail}
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <ActivityIndicator size="small" color="#FFF" />
+                        ) : (
+                            <Text className="text-white font-semibold">View Detail</Text>
                         )}
                     </TouchableOpacity>
                 </View>

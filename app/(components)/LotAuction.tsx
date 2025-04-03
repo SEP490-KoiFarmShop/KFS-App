@@ -34,7 +34,6 @@ export default function LotAuction() {
     const router = useRouter();
     const numColumns = 2;
     const { id } = useLocalSearchParams();
-
     const [loading, setLoading] = useState(false);
     const [lotList, setLotList] = useState<Auction[]>([]);
     const [page, setPage] = useState(1);
@@ -50,11 +49,11 @@ export default function LotAuction() {
         fetchAuctionList(id, searchValue, sortOrder, true);
     }, [id, searchValue, sortOrder]);
 
-    const fetchAuctionList = async (id: any, search = "", sortOrder = "", isSearch = false) => {
+    const fetchAuctionList = async (lotId: any, search = "", sortOrder = "", isSearch = false) => {
         if (loading || (!hasNextPage && !isSearch)) return;
         setLoading(true);
         try {
-            const response = await GlobalApi.getAuctionsById(id);
+            const response = await GlobalApi.getAuctionsById(lotId);
             if (response?.data?.length > 0) {
                 setLotList(prevList => isSearch ? response.data : [...prevList, ...response.data]);
                 setHasNextPage(response.hasNext);
@@ -72,7 +71,7 @@ export default function LotAuction() {
     return (
         <View className="flex-1 mr-1">
             <View className='flex-row justify-start'>
-                <TouchableOpacity onPress={() => router.back()} className='bg-white p-2 rounded-tr-2xl rounded-bl-2xl ml-4 mt-5'>
+                <TouchableOpacity onPress={() => router.push(`/(tabs)/auction`)} className='bg-white p-2 rounded-tr-2xl rounded-bl-2xl ml-4 mt-5'>
                     <Entypo name="chevron-thin-left" size={24} color="black" />
                 </TouchableOpacity>
                 <Text className='mt-6 ml-2 text-2xl font-semibold'>
@@ -85,14 +84,6 @@ export default function LotAuction() {
                 data={lotList}
                 numColumns={numColumns}
                 columnWrapperStyle={{ justifyContent: 'space-between' }}
-                // ListHeaderComponent={<SearchAuction onSearch={(search: any, status: any, fromDate: any, toDate: any, sortOrder: any) => {
-                //     setSearchValue(search);
-                //     setGender(gender);
-                //     setVariety(variety);
-                //     setBreeder(breeder);
-                //     setType(type);
-                //     setSortOrder(sortOrder);
-                // }} />}
                 renderItem={({ item }) => (
                     <LotItem lot={item} />
                 )}

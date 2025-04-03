@@ -21,7 +21,7 @@ export default function OTPSuccess() {
                 if (paymentData && paymentData.order_url) {
                     Linking.openURL(paymentData.order_url)
                         .then(() => {
-                            router.push("/(components)/(tabs)/home");
+                            router.push("/(tabs)/home");
                         })
                         .catch(err => {
                             console.error("Linking error:", err);

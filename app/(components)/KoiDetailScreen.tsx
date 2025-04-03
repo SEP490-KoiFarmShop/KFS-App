@@ -27,7 +27,6 @@ export default function KoiDetailScreen() {
   const { id } = useLocalSearchParams();
   const [koisById, setKoisById] = useState<Koi | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const screenWidth = Dimensions.get("window").width;
 
   const submit = async () => {
     try {
@@ -53,12 +52,11 @@ export default function KoiDetailScreen() {
           },
         }
       );
-
       if (response.status === 201) {
         Alert.alert("Success", "Koi fish added to cart!");
         // router.push(`/Cart`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding koi to cart:", error);
       Alert.alert("Error", "Failed to add koi to cart.");
     }
@@ -68,8 +66,7 @@ export default function KoiDetailScreen() {
     const fetchKoiDetail = async () => {
       try {
         const apiData = await GlobalApi.getKoisById(id);
-        console.log("API Response:", apiData.imageUrl);
-
+        console.log(id)
         if (!apiData || Object.keys(apiData).length === 0) {
           setKoisById(null);
           return;

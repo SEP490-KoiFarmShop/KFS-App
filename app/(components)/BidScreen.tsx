@@ -79,6 +79,9 @@ export default function BidScreen() {
     const [loading, setLoading] = useState(true);
     const [bidAmount, setBidAmount] = useState("");
     const [connection, setConnection] = useState<SignalR.HubConnection | null>(null);
+    const bidValue = (lotData?.currentHighestBid ?? lotData?.startingPrice ?? 0) + (lotData?.priceStep ?? 0);
+    const initialBidAmount = lotData?.currentHighestBid ?? lotData?.startingPrice ?? 0;
+    const minBidAmount = initialBidAmount + (lotData?.priceStep ?? 0);
 
     // useEffect(() => {
     //     const connectToSignalR = async () => {
@@ -195,7 +198,7 @@ export default function BidScreen() {
     };
 
     const placeBid = async () => {
-        const bidValue = parseInt(bidAmount.replace(/\D/g, ""), 10);
+        const bidValue = (lotData?.currentHighestBid ?? lotData?.startingPrice ?? 0) + (lotData?.priceStep ?? 0);
         const initialBidAmount = lotData?.currentHighestBid ?? lotData?.startingPrice ?? 0;
         const minBidAmount = initialBidAmount + (lotData?.priceStep ?? 0);
 
@@ -213,16 +216,16 @@ export default function BidScreen() {
         const parsedToken = JSON.parse(userData);
         const id = parsedToken?.id;
         const jwtToken = parsedToken?.accessToken;
-        // console.log("Sending request with data:", {
-        //     lotId: lotId,
-        //     amount: bidValue
-        // });
+        console.log("Sending request with data:", {
+            lotId: lotId,
+            amount: minBidAmount
+        });
 
         try {
             const response = await axios.post("https://kfsapis.azurewebsites.net/api/v1/auctions/lot/bid",
                 {
                     lotId: lotId,
-                    amount: bidValue,
+                    amount: minBidAmount,
                 },
                 {
                     headers: {
@@ -244,7 +247,7 @@ export default function BidScreen() {
 
     return (
         <View className="flex-1 bg-gray-100 p-4">
-            <TouchableOpacity onPress={() => router.back()}>
+            <TouchableOpacity onPress={() => router.push(`/(components)/LotDetailScreen?lotId=${lotId}`)}>
                 <View className="flex-row items-center">
                     <Feather name="arrow-left" size={24} color="black" />
                     <Text className="text-lg font-bold ml-3">Bid Auction</Text>
@@ -303,26 +306,17 @@ export default function BidScreen() {
                 <Text className="text-lg font-bold mt-2 mb-2">Highest price: {formatCurrency(lotData?.currentHighestBid)}</Text>
 
                 <TextInput
-                    value={bidAmount}
-                    onChangeText={handleBidInput}
+                    value={formatCurrency(minBidAmount)}
                     keyboardType="numeric"
-                    placeholder="Bid your price"
                     mode="outlined"
                     outlineColor="blue"
                     activeOutlineColor="blue"
                     style={{ backgroundColor: "white" }}
+                    editable={false}
                 />
 
                 <TouchableOpacity
-                    className={`p-3 rounded-lg mt-2 items-center ${(parseInt(bidAmount.replace(/\D/g, ""), 10) || 0) <
-                        (((lotData?.currentHighestBid ?? lotData?.startingPrice ?? 0) + (lotData?.priceStep ?? 0)))
-                        ? "bg-gray-400"
-                        : "bg-blue-500"
-                        }`}
-                    disabled={
-                        (parseInt(bidAmount.replace(/\D/g, ""), 10) || 0) <
-                        (((lotData?.currentHighestBid ?? lotData?.startingPrice ?? 0) + (lotData?.priceStep ?? 0)))
-                    }
+                    className="p-3 rounded-lg mt-2 items-center bg-blue-500"
                     onPress={placeBid}
                 >
                     <Text className="text-white font-bold">Bidding</Text>
