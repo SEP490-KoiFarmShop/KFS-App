@@ -48,12 +48,13 @@ const LoginScreen = () => {
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView>
         <SafeAreaView className="flex">
-          <View className="flex-row justify-start">
+          <View className="flex-row justify-between items-center">
             <TouchableOpacity
-              onPress={() => router.back()}
-              className="bg-white p-2 rounded-tr-2xl rounded-bl-2xl ml-4 mt-5"
+              onPress={() => router.push(`/(tabs)/home`)}
+              className="bg-white p-2 rounded-tr-2xl rounded-bl-2xl ml-4 mt-5 flex-row items-center"
             >
               <Entypo name="chevron-thin-left" size={24} color="black" />
+              <Text className="text-gray-800 font-semibold ml-1">Back</Text>
             </TouchableOpacity>
           </View>
           <View className="flex-row justify-center mt-2">

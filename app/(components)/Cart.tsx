@@ -30,13 +30,26 @@ export default function Cart() {
   const fetchCart = async () => {
     try {
       setIsLoading(true);
-      const userData = await AsyncStorage.getItem("userData");
-      if (!userData) {
-        router.push("/(auth)/LoginScreen");
+      const token = await AsyncStorage.getItem("userData");
+      if (!token) {
+        Alert.alert(
+          "Login Required",
+          "You need to login first. Would you like to go to the login page?",
+          [
+            {
+              text: "Cancel",
+              style: "cancel",
+              onPress: () => router.push("/(tabs)/home"),
+            },
+            {
+              text: "Login",
+              onPress: () => router.push("/(auth)/LoginScreen"),
+            },
+          ]
+        );
         return;
       }
-
-      const parsedToken = JSON.parse(userData);
+      const parsedToken = JSON.parse(token);
       const jwtToken = parsedToken?.accessToken;
 
       const response = await axios.get(
@@ -83,7 +96,6 @@ export default function Cart() {
   const removeFromCart = async (koiFishIds: number[]) => {
     try {
       setIsRemoveLoading(true);
-      // Get user data from AsyncStorage
       const userData = await AsyncStorage.getItem("userData");
       if (!userData) {
         Alert.alert("Error", "You need to login first!");
@@ -94,7 +106,6 @@ export default function Cart() {
       const parsedToken = JSON.parse(userData);
       const jwtToken = parsedToken?.accessToken;
 
-      // Make the PUT request to remove items from cart
       const response = await axios.put(
         "https://kfsapis.azurewebsites.net/api/v1/carts/products-removed",
         {

@@ -113,6 +113,7 @@ const removeImage = (
 const submitConsignment = async (data: any) => {
   const userData = await AsyncStorage.getItem("userData");
   if (!userData) {
+    alert("User not logged in. Redirecting to login screen.");
     router.push("/(auth)/LoginScreen");
     return;
   }
@@ -135,7 +136,6 @@ const submitConsignment = async (data: any) => {
     alert("Consignment created successfully!");
     return response.data;
   } catch (error: any) {
-    // console.error("API error:", error);
     alert(error.response.data.Message);
     console.log(error.response.data.Message);
   }

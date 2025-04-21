@@ -6,6 +6,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import ViewShot, { captureRef } from "react-native-view-shot";
 import * as FileSystem from "expo-file-system";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Entypo from "@expo/vector-icons/Entypo";
 
 export default function ContractDetail() {
   const { id } = useLocalSearchParams();
@@ -233,6 +234,15 @@ export default function ContractDetail() {
 
   return (
     <View className="flex-1 bg-white p-4">
+      <View className="flex-row items-center">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="p-2 rounded-full bg-gray-100"
+        >
+          <Entypo name="chevron-thin-left" size={24} color="black" />
+        </TouchableOpacity>
+        <Text className="ml-4 text-2xl font-bold">Contract</Text>
+      </View>
       {/* Bọc hợp đồng trong ViewShot */}
       <ViewShot
         ref={contractRef}

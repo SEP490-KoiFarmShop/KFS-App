@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
 import React from "react";
 import {
   FontAwesome,
@@ -7,9 +7,29 @@ import {
   Feather,
 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import AntDesign from "@expo/vector-icons/AntDesign";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Profile() {
   const router = useRouter();
+
+  const logout = () => {
+    Alert.alert("Confirm Logout", "Are you sure you want to logout?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          await AsyncStorage.removeItem("userData");
+          router.replace("(auth)/LoginScreen");
+        },
+      },
+    ]);
+  };
+
   return (
     <ScrollView className="bg-gray-100">
       {/* Orders */}
@@ -142,7 +162,7 @@ export default function Profile() {
         <Text className="font-semibold">Tiện ích của tôi</Text>
         <View className="flex-row justify-around mt-3">
           <TouchableOpacity onPress={() => router.push(`/(components)/Wallet`)}>
-            <IconLabel icon="wallet" label="Ví ShopeePay" library="Entypo" />
+            <IconLabel icon="wallet" label="My Wallet" library="Entypo" />
           </TouchableOpacity>
           <IconLabel icon="calendar" label="SPayLater" library="Feather" />
           <IconLabel icon="gift" label="Shopee Xu" />
@@ -152,6 +172,18 @@ export default function Profile() {
             library="MaterialIcons"
           />
         </View>
+      </View>
+
+      <View className="bg-white p-4 mt-2">
+        <TouchableOpacity className="flex-row py-2" onPress={logout}>
+          <AntDesign
+            name="poweroff"
+            size={24}
+            color="red"
+            className="ml-3 mr-3"
+          />
+          <Text className="text-red-600 font-bold ml-3">Log out</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );

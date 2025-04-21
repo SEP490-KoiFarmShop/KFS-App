@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, SafeAreaView, TouchableOpacity } from "react-native";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import TableScreen from "./TableScreen";
-import { Ionicons } from "@expo/vector-icons";
+import Entypo from "@expo/vector-icons/Entypo";
 import { useRouter } from "expo-router";
 
 const Tab = createMaterialTopTabNavigator();
@@ -56,15 +56,12 @@ const ConsignmentList = ({ navigation }: any) => {
       >
         <TouchableOpacity
           onPress={handleBack}
-          style={{
-            padding: 8,
-            marginRight: 10,
-          }}
+          className="p-2 rounded-full bg-gray-200"
         >
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Entypo name="chevron-thin-left" size={24} color="black" />
         </TouchableOpacity>
 
-        <View>
+        <View className="ml-4">
           <Text style={{ fontWeight: "bold", fontSize: 24 }}>
             Consignment List
           </Text>

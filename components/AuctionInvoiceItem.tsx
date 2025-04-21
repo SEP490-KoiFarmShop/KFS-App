@@ -200,7 +200,7 @@ export default function AuctionInvoiceItem({ item }: any) {
           </TouchableOpacity>
         )}
 
-        {item.status === "Delivered" && (
+        {/* {item.status === "Delivered" && (
           <TouchableOpacity
             className="bg-green-500 px-3 py-1 rounded-md"
             onPress={confirmReceived}
@@ -212,7 +212,7 @@ export default function AuctionInvoiceItem({ item }: any) {
               <Text className="text-white font-semibold">Received</Text>
             )}
           </TouchableOpacity>
-        )}
+        )} */}
       </View>
     </View>
   );
