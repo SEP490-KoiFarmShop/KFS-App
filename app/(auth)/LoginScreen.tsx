@@ -31,8 +31,13 @@ const LoginScreen = () => {
         if (response.data) {
           const userData = response.data;
           Alert.alert("Login Successful", "You have successfully logged in!");
-          await AsyncStorage.setItem('userData', JSON.stringify(userData));
-          router.push("(tabs)/home");
+          await AsyncStorage.setItem("userData", JSON.stringify(userData));
+
+          if (userData.role === "SHIPPER") {
+            router.push("/(delivery)/DeliveryList");
+          } else {
+            router.push("(tabs)/home");
+          }
         }
       }
     } catch (error) {

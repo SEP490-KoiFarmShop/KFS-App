@@ -1,220 +1,530 @@
 import {
-    View,
-    Text,
-    TouchableOpacity,
-    ActivityIndicator,
-    Linking,
-    Alert,
-    TextInput,
-    Modal,
-    ScrollView,
-    RefreshControl
-} from 'react-native';
-import React, { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'expo-router';
-import Entypo from '@expo/vector-icons/Entypo';
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  Linking,
+  Alert,
+  TextInput,
+  Modal,
+  ScrollView,
+  RefreshControl,
+  Image,
+} from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { useRouter } from "expo-router";
+import {
+  Ionicons,
+  FontAwesome5,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface WalletData {
-    customerId: number;
-    customerName: string;
-    walletId: number;
-    balance: number;
-    availableBalance: number;
-    frozenBalance: number;
-    status: string;
-    createdAt: string;
-    updatedAt: string;
+  customerId: number;
+  customerName: string;
+  walletId: number;
+  balance: number;
+  availableBalance: number;
+  frozenBalance: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function Wallet() {
-    const router = useRouter();
-    const [wallet, setWallet] = useState<WalletData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string>("");
-    const [depositLoading, setDepositLoading] = useState(false);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [depositAmount, setDepositAmount] = useState("");
-    const [refreshing, setRefreshing] = useState(false);
+  const router = useRouter();
+  const [wallet, setWallet] = useState<WalletData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>("");
+  const [depositLoading, setDepositLoading] = useState(false);
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
+  const [depositModalVisible, setDepositModalVisible] = useState(false);
+  const [withdrawModalVisible, setWithdrawModalVisible] = useState(false);
+  const [depositAmount, setDepositAmount] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const [quickAmounts] = useState([100000, 200000, 500000, 1000000, 2000000]);
 
-    // Fetch wallet information
-    const fetchWalletInfo = useCallback(async () => {
-        setLoading(true);
-        setError("");
-        try {
-            const userData = await AsyncStorage.getItem("userData");
-            if (!userData) {
-                router.push("/(auth)/LoginScreen");
-                return;
-            }
+  // Format currency in VND
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
-            const parsedToken = JSON.parse(userData);
-            const id = parsedToken?.id;
-            const jwtToken = parsedToken?.accessToken;
+  // Fetch wallet information
+  const fetchWalletInfo = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const userData = await AsyncStorage.getItem("userData");
+      if (!userData) {
+        router.push("/(auth)/LoginScreen");
+        return;
+      }
 
-            const response = await axios.get('https://kfsapis.azurewebsites.net/api/Wallet/GetWalletForCustomer', {
-                params: { customerId: id },
-                headers: {
-                    Authorization: `Bearer ${jwtToken}`,
-                    "Content-Type": "application/json",
-                },
-            });
+      const parsedToken = JSON.parse(userData);
+      const id = parsedToken?.id;
+      const jwtToken = parsedToken?.accessToken;
 
-            setWallet(response.data);
-        } catch (err) {
-            setError("❌ Failed to fetch wallet data. Please try again.");
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
+      const response = await axios.get(
+        "https://kfsapis.azurewebsites.net/api/Wallet/GetWalletForCustomer",
+        {
+          params: { customerId: id },
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+            "Content-Type": "application/json",
+          },
         }
-    }, [router]);
+      );
 
-    // Load wallet on mount
-    useEffect(() => {
-        fetchWalletInfo();
-    }, [fetchWalletInfo]);
+      setWallet(response.data);
+    } catch (err) {
+      setError("❌ Failed to fetch wallet data. Please try again.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [router]);
 
-    // Handle deposit
-    const handleDeposit = async () => {
-        setDepositLoading(true);
-        try {
-            const userData = await AsyncStorage.getItem("userData");
-            if (!userData) {
-                router.push("/(auth)/LoginScreen");
-                return;
-            }
+  // Load wallet on mount
+  useEffect(() => {
+    fetchWalletInfo();
+  }, [fetchWalletInfo]);
 
-            const parsedToken = JSON.parse(userData);
-            const jwtToken = parsedToken?.accessToken;
+  // Handle deposit
+  const handleDeposit = async () => {
+    if (!depositAmount || Number(depositAmount) <= 0) {
+      Alert.alert("Error", "Please enter a valid amount");
+      return;
+    }
 
-            const response = await axios.post(
-                'https://kfsapis.azurewebsites.net/api/Wallet/RechargeWalletForCustomer',
-                null,
-                {
-                    params: { moneyAmount: Number(depositAmount) },
-                    headers: {
-                        Authorization: `Bearer ${jwtToken}`,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
+    setDepositLoading(true);
+    try {
+      const userData = await AsyncStorage.getItem("userData");
+      if (!userData) {
+        router.push("/(auth)/LoginScreen");
+        return;
+      }
 
-            if (response.data.return_code === 1) {
-                Linking.openURL(response.data.order_url)
-                    .then(() => {
-                        router.push("Wallet");
-                    })
-                    .catch(() => {
-                        Alert.alert("Lỗi", "Không thể mở liên kết thanh toán.");
-                    });
-            } else {
-                Alert.alert("Error", response.data.return_message || "Deposit failed");
-            }
-        } catch (err) {
-            Alert.alert("Error", "Failed to process deposit.");
-        } finally {
-            setDepositLoading(false);
-            setModalVisible(false);
-            setDepositAmount("");
-            fetchWalletInfo();
+      const parsedToken = JSON.parse(userData);
+      const jwtToken = parsedToken?.accessToken;
+
+      const response = await axios.post(
+        "https://kfsapis.azurewebsites.net/api/Wallet/RechargeWalletForCustomer",
+        null,
+        {
+          params: { moneyAmount: Number(depositAmount) },
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+            "Content-Type": "application/json",
+          },
         }
-    };
+      );
 
-    return (
-        <View className="flex-1 bg-orange-500">
-            <View className="flex-row justify-start">
-                <TouchableOpacity onPress={() => router.back()} className="bg-white p-2 rounded-tr-2xl rounded-bl-2xl ml-4 mt-5">
-                    <Entypo name="chevron-thin-left" size={24} color="black" />
-                </TouchableOpacity>
-                <Text className="text-white text-lg font-bold mt-7 ml-5">KFS Wallet</Text>
-            </View>
+      if (response.data.return_code === 1) {
+        Linking.openURL(response.data.order_url)
+          .then(() => {
+            router.push("Wallet");
+          })
+          .catch(() => {
+            Alert.alert("Lỗi", "Không thể mở liên kết thanh toán.");
+          });
+      } else {
+        Alert.alert("Error", response.data.return_message || "Deposit failed");
+      }
+    } catch (err) {
+      Alert.alert("Error", "Failed to process deposit.");
+    } finally {
+      setDepositLoading(false);
+      setDepositModalVisible(false);
+      setDepositAmount("");
+      fetchWalletInfo();
+    }
+  };
 
-            <ScrollView
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={() => {
-                        setRefreshing(true);
-                        fetchWalletInfo();
-                    }} />
-                }
-            >
-                <View className="p-5">
-                    {loading ? (
-                        <ActivityIndicator size="large" color="white" />
-                    ) : error ? (
-                        <Text className="text-white text-sm">{error}</Text>
-                    ) : (
-                        <>
-                            <Text className="text-white text-sm">Total balance 👁️</Text>
-                            <Text className="text-white text-2xl font-bold">
-                                {wallet?.balance ? wallet.balance.toLocaleString("vi-VN", { style: "currency", currency: "VND" }) : "đ0"}
-                            </Text>
-                        </>
-                    )}
-                </View>
+  // Handle withdraw
+  const handleWithdraw = async () => {
+    if (!withdrawAmount || Number(withdrawAmount) <= 0) {
+      Alert.alert("Error", "Please enter a valid amount");
+      return;
+    }
 
-                <View className="bg-white rounded-lg p-4 mx-5 shadow-lg">
-                    <View className="flex-row justify-around">
-                        <TouchableOpacity className="items-center" onPress={() => setModalVisible(true)} disabled={depositLoading}>
-                            <Text className="text-orange-500 text-lg">💰</Text>
-                            <Text className="text-sm font-medium">
-                                {depositLoading ? "Processing..." : "Deposit"}
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity className="items-center">
-                            <Text className="text-orange-500 text-lg">🔄</Text>
-                            <Text className="text-sm font-medium">Withdraw</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity className="items-center">
-                            <Text className="text-orange-500 text-lg">📥</Text>
-                            <Text className="text-sm font-medium">Transaction History</Text>
-                        </TouchableOpacity>
-                        {/* <TouchableOpacity className="items-center">
-                            <Text className="text-orange-500 text-lg">🎁</Text>
-                            <Text className="text-sm font-medium">Incentive Policy</Text>
-                        </TouchableOpacity> */}
-                    </View>
-                </View>
-            </ScrollView>
+    // Check if withdraw amount exceeds available balance
+    if (wallet && Number(withdrawAmount) > wallet.availableBalance) {
+      Alert.alert("Error", "Withdrawal amount exceeds available balance");
+      return;
+    }
 
-            <View className="bg-white p-2 rounded-t-2xl mt-5 h-[65%]">
-                <Modal visible={modalVisible} animationType="slide" transparent={true}>
-                    <View className="flex-1 justify-center items-center bg-black bg-opacity-50">
-                        <View className="bg-white w-80 p-5 rounded-lg shadow-lg">
-                            <Text className="text-lg font-bold text-center">Enter Deposit Amount</Text>
-                            <TextInput
-                                className="border border-gray-300 p-2 rounded mt-4 text-center"
-                                keyboardType="numeric"
-                                placeholder="Nhập số tiền (VND)"
-                                value={depositAmount}
-                                onChangeText={setDepositAmount}
-                            />
-                            <Text className="text-center mt-2 text-gray-600">
-                                {depositAmount ? Number(depositAmount).toLocaleString("vi-VN", { style: "currency", currency: "VND" }) : ""}
-                            </Text>
-                            <View className="flex-row justify-between mt-5">
-                                <TouchableOpacity
-                                    className="bg-gray-300 p-3 rounded-lg w-1/3"
-                                    onPress={() => setModalVisible(false)}
-                                >
-                                    <Text className="text-center font-medium">Cancel</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    className="bg-orange-500 p-3 rounded-lg w-1/3"
-                                    onPress={handleDeposit}
-                                    disabled={depositLoading}
-                                >
-                                    <Text className="text-center text-white font-medium">
-                                        {depositLoading ? "Processing..." : "Confirm"}
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </View>
-                </Modal>
-            </View>
+    setWithdrawLoading(true);
+    try {
+      const userData = await AsyncStorage.getItem("userData");
+      if (!userData) {
+        router.push("/(auth)/LoginScreen");
+        return;
+      }
 
+      const parsedToken = JSON.parse(userData);
+      const jwtToken = parsedToken?.accessToken;
 
+      const response = await axios.post(
+        "https://kfsapis.azurewebsites.net/api/Wallet/CreateWithdrawRequest",
+        null,
+        {
+          params: { amount: Number(withdrawAmount) },
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Handle success
+      Alert.alert(
+        "Success",
+        "Your withdrawal request has been submitted successfully. It will be processed shortly.",
+        [{ text: "OK", onPress: () => fetchWalletInfo() }]
+      );
+    } catch (err: any) {
+      console.error("Withdrawal error:", err.response?.data || err.message);
+      Alert.alert(
+        "Error",
+        err.response?.data?.message ||
+          "Failed to process withdrawal. Please try again later."
+      );
+    } finally {
+      setWithdrawLoading(false);
+      setWithdrawModalVisible(false);
+      setWithdrawAmount("");
+    }
+  };
+
+  const selectQuickAmount = (amount: number, isDeposit: boolean) => {
+    if (isDeposit) {
+      setDepositAmount(amount.toString());
+    } else {
+      setWithdrawAmount(amount.toString());
+    }
+  };
+
+  return (
+    <View className="flex-1 bg-gray-100">
+      {/* Header */}
+      <View className="bg-orange-500 pt-12 pb-6 rounded-b-3xl shadow-md">
+        <View className="px-4 flex-row justify-between items-center">
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/profile")}
+            className="p-2"
+          >
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+          <Text className="text-white text-xl font-bold">KFS Wallet</Text>
+          <TouchableOpacity
+            onPress={() => router.push("(components)/WalletTransaction")}
+            className="p-2"
+          >
+            <Ionicons name="time-outline" size={24} color="white" />
+          </TouchableOpacity>
         </View>
-    );
+
+        <View className="items-center mt-4">
+          <Text className="text-white text-sm opacity-80">Total Balance</Text>
+          {loading ? (
+            <ActivityIndicator size="large" color="white" className="my-2" />
+          ) : error ? (
+            <Text className="text-white text-sm mt-2">{error}</Text>
+          ) : (
+            <Text className="text-white text-3xl font-bold mt-2">
+              {wallet?.availableBalance
+                ? formatCurrency(wallet?.availableBalance)
+                : "0₫"}
+            </Text>
+          )}
+        </View>
+      </View>
+
+      <ScrollView
+        className="flex-1"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchWalletInfo();
+            }}
+          />
+        }
+      >
+        {/* Quick Actions */}
+        <View className="bg-white mx-4 rounded-2xl p-5 shadow-sm mt-4">
+          <Text className="text-gray-700 font-medium mb-4">Quick Actions</Text>
+          <View className="flex-row justify-around">
+            <TouchableOpacity
+              className="items-center"
+              onPress={() => setDepositModalVisible(true)}
+              disabled={depositLoading}
+            >
+              <View className="bg-orange-100 w-14 h-14 rounded-full items-center justify-center mb-2">
+                <FontAwesome5 name="wallet" size={20} color="#f97316" />
+              </View>
+              <Text className="text-sm text-gray-700">
+                {depositLoading ? "Processing..." : "Deposit"}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="items-center"
+              onPress={() => setWithdrawModalVisible(true)}
+              disabled={withdrawLoading || (wallet?.availableBalance || 0) <= 0}
+            >
+              <View className="bg-blue-100 w-14 h-14 rounded-full items-center justify-center mb-2">
+                <FontAwesome5
+                  name="hand-holding-usd"
+                  size={20}
+                  color="#3b82f6"
+                />
+              </View>
+              <Text className="text-sm text-gray-700">
+                {withdrawLoading ? "Processing..." : "Withdraw"}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="items-center"
+              onPress={() => router.push("/ViewWithdrawRequest")}
+            >
+              <View className="bg-purple-100 w-14 h-14 rounded-full items-center justify-center mb-2">
+                <MaterialCommunityIcons
+                  name="file-document-outline"
+                  size={24}
+                  color="#8b5cf6"
+                />
+              </View>
+              <Text className="text-sm text-gray-700">View Requests</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="items-center"
+              onPress={() => router.push("(components)/WalletTransaction")}
+            >
+              <View className="bg-green-100 w-14 h-14 rounded-full items-center justify-center mb-2">
+                <MaterialCommunityIcons
+                  name="history"
+                  size={24}
+                  color="#22c55e"
+                />
+              </View>
+              <Text className="text-sm text-gray-700">History</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Wallet Details */}
+        {!loading && wallet && (
+          <View className="bg-white mx-4 rounded-2xl p-5 shadow-sm mt-4">
+            <Text className="text-gray-700 font-medium mb-4">
+              Wallet Details
+            </Text>
+
+            <View className="flex-row justify-between items-center py-3 border-b border-gray-100">
+              <Text className="text-gray-600">Available Balance</Text>
+              <Text className="text-gray-800 font-medium">
+                {formatCurrency(wallet.availableBalance)}
+              </Text>
+            </View>
+
+            <View className="flex-row justify-between items-center py-3 border-b border-gray-100">
+              <Text className="text-gray-600">Frozen Balance</Text>
+              <Text className="text-gray-800 font-medium">
+                {formatCurrency(wallet.frozenBalance)}
+              </Text>
+            </View>
+
+            <View className="flex-row justify-between items-center py-3">
+              <Text className="text-gray-600">Status</Text>
+              <View className="flex-row items-center">
+                <View
+                  className={`w-2 h-2 rounded-full mr-2 ${
+                    wallet.status === "Active" ? "bg-green-500" : "bg-red-500"
+                  }`}
+                />
+                <Text className="text-gray-800 font-medium">
+                  {wallet.status}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Deposit Modal */}
+      <Modal
+        visible={depositModalVisible}
+        animationType="slide"
+        transparent={true}
+      >
+        <View className="flex-1 justify-end bg-black bg-opacity-50">
+          <View className="bg-white rounded-t-3xl p-6">
+            <View className="flex-row justify-between items-center mb-6">
+              <Text className="text-xl font-bold text-gray-800">
+                Deposit Money
+              </Text>
+              <TouchableOpacity onPress={() => setDepositModalVisible(false)}>
+                <Ionicons name="close" size={24} color="gray" />
+              </TouchableOpacity>
+            </View>
+
+            <Text className="text-gray-600 mb-2">Enter amount (VND)</Text>
+            <TextInput
+              className="border border-gray-300 p-4 rounded-xl text-lg mb-4"
+              keyboardType="numeric"
+              placeholder="0₫"
+              value={depositAmount}
+              onChangeText={setDepositAmount}
+            />
+
+            <Text className="text-gray-600 mb-3">Quick amounts</Text>
+            <View className="flex-row flex-wrap justify-between mb-6">
+              {quickAmounts.map((amount) => (
+                <TouchableOpacity
+                  key={`deposit-${amount}`}
+                  className={`py-2 px-4 mb-2 rounded-lg border ${
+                    depositAmount === amount.toString()
+                      ? "bg-orange-500 border-orange-500"
+                      : "bg-white border-gray-300"
+                  }`}
+                  onPress={() => selectQuickAmount(amount, true)}
+                >
+                  <Text
+                    className={`${
+                      depositAmount === amount.toString()
+                        ? "text-white"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    {formatCurrency(amount)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              className="bg-orange-500 p-4 rounded-xl"
+              onPress={handleDeposit}
+              disabled={depositLoading || !depositAmount}
+            >
+              {depositLoading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-center text-white font-bold text-lg">
+                  Deposit{" "}
+                  {depositAmount ? formatCurrency(Number(depositAmount)) : ""}
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="mt-4 p-3"
+              onPress={() => setDepositModalVisible(false)}
+            >
+              <Text className="text-center text-gray-500">Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Withdraw Modal */}
+      <Modal
+        visible={withdrawModalVisible}
+        animationType="slide"
+        transparent={true}
+      >
+        <View className="flex-1 justify-end bg-black bg-opacity-50">
+          <View className="bg-white rounded-t-3xl p-6">
+            <View className="flex-row justify-between items-center mb-6">
+              <Text className="text-xl font-bold text-gray-800">
+                Withdraw Money
+              </Text>
+              <TouchableOpacity onPress={() => setWithdrawModalVisible(false)}>
+                <Ionicons name="close" size={24} color="gray" />
+              </TouchableOpacity>
+            </View>
+
+            <Text className="text-gray-600 mb-2">Enter amount (VND)</Text>
+            <TextInput
+              className="border border-gray-300 p-4 rounded-xl text-lg mb-4"
+              keyboardType="numeric"
+              placeholder="0₫"
+              value={withdrawAmount}
+              onChangeText={setWithdrawAmount}
+            />
+
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-gray-600">Available Balance:</Text>
+              <Text className="text-gray-800 font-bold">
+                {wallet ? formatCurrency(wallet.availableBalance) : "0₫"}
+              </Text>
+            </View>
+
+            <Text className="text-gray-600 mb-3">Quick amounts</Text>
+            <View className="flex-row flex-wrap justify-between mb-6">
+              {quickAmounts
+                .filter((amount) => wallet && amount <= wallet.availableBalance)
+                .map((amount) => (
+                  <TouchableOpacity
+                    key={`withdraw-${amount}`}
+                    className={`py-2 px-4 mb-2 rounded-lg border ${
+                      withdrawAmount === amount.toString()
+                        ? "bg-blue-500 border-blue-500"
+                        : "bg-white border-gray-300"
+                    }`}
+                    onPress={() => selectQuickAmount(amount, false)}
+                  >
+                    <Text
+                      className={`${
+                        withdrawAmount === amount.toString()
+                          ? "text-white"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      {formatCurrency(amount)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+            </View>
+
+            <TouchableOpacity
+              className="bg-blue-500 p-4 rounded-xl"
+              onPress={handleWithdraw}
+              disabled={
+                withdrawLoading ||
+                !withdrawAmount ||
+                Number(withdrawAmount) > (wallet?.availableBalance || 0)
+              }
+            >
+              {withdrawLoading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-center text-white font-bold text-lg">
+                  Withdraw{" "}
+                  {withdrawAmount ? formatCurrency(Number(withdrawAmount)) : ""}
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="mt-4 p-3"
+              onPress={() => setWithdrawModalVisible(false)}
+            >
+              <Text className="text-center text-gray-500">Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
 }

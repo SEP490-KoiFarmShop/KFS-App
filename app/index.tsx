@@ -2,21 +2,40 @@ import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { View } from "react-native";
 import { ActivityIndicator } from "react-native-paper";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Index() {
-    const router = useRouter();
+  const router = useRouter();
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            router.replace("(tabs)/home");
-        }, 100);
+  useEffect(() => {
+    const checkRoleAndRedirect = async () => {
+      try {
+        const userData = await AsyncStorage.getItem("userData");
+        if (!userData) {
+          router.replace("/(tabs)/home");
+          return;
+        }
 
-        return () => clearTimeout(timer);
-    }, [router]);
+        const parsedData = JSON.parse(userData);
+        const role = parsedData?.role;
 
-    return (
-        <View className="flex items-center justify-center">
-            <ActivityIndicator size="large" color="#FF6600" />
-        </View>
-    );
+        if (role === "SHIPPER") {
+          router.replace("/(delivery)/DeliveryList");
+        } else {
+          router.replace("/(tabs)/home");
+        }
+      } catch (error) {
+        console.error("Failed to get user data:", error);
+        router.replace("/(auth)/LoginScreen");
+      }
+    };
+
+    checkRoleAndRedirect();
+  }, [router]);
+
+  return (
+    <View className="flex-1 items-center justify-center bg-white">
+      <ActivityIndicator size="large" color="#FF6600" />
+    </View>
+  );
 }

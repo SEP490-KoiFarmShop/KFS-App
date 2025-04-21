@@ -2,7 +2,6 @@ import React from "react";
 import { Stack, useLocalSearchParams } from "expo-router";
 
 const layout = () => {
-  const { category, koiname, breeder } = useLocalSearchParams();
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen
@@ -33,13 +32,13 @@ const layout = () => {
           title: "Your Cart",
         })}
       />
-      <Stack.Screen
+      {/* <Stack.Screen
         name="Wallet"
         options={() => ({
           headerShown: false,
           title: "Your Wallet",
         })}
-      />
+      /> */}
       <Stack.Screen
         name="KoiFishAll"
         options={() => ({
@@ -59,6 +58,13 @@ const layout = () => {
         options={() => ({
           headerShown: false,
           title: "Order Success",
+        })}
+      />
+      <Stack.Screen
+        name="WalletTransaction"
+        options={() => ({
+          headerShown: false,
+          title: "Wallet Transaction",
         })}
       />
     </Stack>

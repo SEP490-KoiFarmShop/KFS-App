@@ -1,195 +1,429 @@
-import { View, TouchableOpacity, ScrollView, Image, Text, Alert } from 'react-native'
-import React, { useEffect, useState } from 'react'
-import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Entypo from '@expo/vector-icons/Entypo';
-import CustomButton from '@/components/CustomButton';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import { Checkbox } from 'react-native-paper';
+import {
+  View,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  Text,
+  Alert,
+  RefreshControl,
+} from "react-native";
+import React, { useEffect, useState, useCallback } from "react";
+import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Entypo from "@expo/vector-icons/Entypo";
+import CustomButton from "@/components/CustomButton";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import { Checkbox } from "react-native-paper";
 
 export default function Cart() {
-    const router = useRouter();
-    const [cartItems, setCartItems] = useState<any>([]);
-    const [selectedItems, setSelectedItems] = useState<{ [key: string]: boolean }>({});
-    const [totalPrice, setTotalPrice] = useState(0);
-    const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const [cartItems, setCartItems] = useState<any>([]);
+  const [selectedItems, setSelectedItems] = useState<{
+    [key: string]: boolean;
+  }>({});
+  const [totalPrice, setTotalPrice] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRemoveLoading, setIsRemoveLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-    useEffect(() => {
-        const fetchCart = async () => {
-            try {
-                setIsLoading(true);
-                const userData = await AsyncStorage.getItem("userData");
-                if (!userData) {
-                    router.push("/(auth)/LoginScreen");
-                    return;
-                }
+  const fetchCart = async () => {
+    try {
+      setIsLoading(true);
+      const userData = await AsyncStorage.getItem("userData");
+      if (!userData) {
+        router.push("/(auth)/LoginScreen");
+        return;
+      }
 
-                const parsedToken = JSON.parse(userData);
-                const id = parsedToken?.id;
-                const jwtToken = parsedToken?.accessToken;
+      const parsedToken = JSON.parse(userData);
+      const jwtToken = parsedToken?.accessToken;
 
-                const response = await axios.get(`https://kfsapis.azurewebsites.net/api/Cart/GetCartAndItemsInside`
-                    ,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${jwtToken}`,
-                            "Content-Type": "application/json",
-                        },
-                    }
-                );
-                console.log(response.data.items)
-
-                if (response.data && response.data.items) {
-                    setCartItems(response.data.items);
-                    setTotalPrice(response.data.items.reduce((sum: any, item: any) => sum + item.price * item.quantity, 0));
-                }
-            } catch (error) {
-                console.error("Lỗi lấy dữ liệu giỏ hàng:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchCart();
-    }, []);
-
-    const submit = async () => {
-        try {
-            const selectedKoiFishIds = Object.keys(selectedItems)
-                .filter(id => selectedItems[id])
-                .map(id => Number(id));
-
-            if (selectedKoiFishIds.length === 0) {
-                console.warn("Không có sản phẩm nào được chọn.");
-                return;
-            }
-
-            setIsLoading(true);
-            const token = await AsyncStorage.getItem("userData");
-            if (!token) {
-                Alert.alert("Error", "You need to login first!");
-                router.push('/(auth)/LoginScreen');
-                return;
-            }
-            const parsedToken = JSON.parse(token);
-            const jwtToken = parsedToken?.accessToken;
-
-            console.log("Selected Koi Fish IDs:", selectedKoiFishIds);
-            if (selectedKoiFishIds.length === 0) {
-                console.error("Không có sản phẩm nào được chọn.");
-                return;
-            }
-
-            const queryString = selectedKoiFishIds.map(id => `koi-fish-ids=${id}`).join("&");
-            const url = `https://kfsapis.azurewebsites.net/api/v1/orders/check-out?${queryString}`;
-            console.log("Checkout URL:", url);
-
-            const response = await axios.get(url, {
-                headers: {
-                    Authorization: `Bearer ${jwtToken}`,
-                    "Content-Type": "application/json",
-                },
-            });
-
-            router.push(`/OrderDetail?orderId=${selectedKoiFishIds.join("x")}`);
-        } catch (error: any) {
-            console.error("Lỗi khi checkout:", error.response);
-        } finally {
-            setIsLoading(false);
+      const response = await axios.get(
+        `https://kfsapis.azurewebsites.net/api/Cart/GetCartAndItemsInside`,
+        {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+            "Content-Type": "application/json",
+          },
         }
-    };
+      );
+      console.log(response.data.items);
 
+      if (response.data && response.data.items) {
+        setCartItems(response.data.items);
+        setTotalPrice(
+          response.data.items.reduce(
+            (sum: any, item: any) => sum + item.price * item.quantity,
+            0
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Lỗi lấy dữ liệu giỏ hàng:", error);
+      Alert.alert("Error", "Failed to load cart items. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const toggleCheckbox = (productId: number) => {
-        setSelectedItems((prev) => ({
-            ...prev,
-            [productId]: !prev[productId],
-        }));
-    };
+  useEffect(() => {
+    fetchCart();
+  }, []);
 
-    return (
-        <View className='flex-1 bg-gray-100'>
-            <SafeAreaView className='flex-1'>
-                {/* Go Back */}
-                <View className='flex-row items-center p-5 bg-white shadow-md'>
-                    <TouchableOpacity onPress={() => router.back()} className='p-2 rounded-full bg-gray-100'>
-                        <Entypo name="chevron-thin-left" size={24} color="black" />
-                    </TouchableOpacity>
-                    <Text className='ml-4 text-2xl font-bold'>Your Cart</Text>
-                </View>
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchCart();
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
-                {/* Cart Items */}
-                <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}>
-                    {cartItems.length > 0 ? cartItems.map((item: any, index: any) => (
-                        <TouchableOpacity
-                            key={index}
-                            className="bg-white rounded-lg shadow-md mx-4 p-4 flex-row items-center mt-5"
-                            onPress={() => toggleCheckbox(item.productId)}
-                            activeOpacity={0.7}
-                        >
-                            <Checkbox
-                                status={selectedItems[item.productId] ? 'checked' : 'unchecked'}
-                                onPress={() => toggleCheckbox(item.productId)}
-                                color="#FF6B00"
-                            />
-                            <Image
-                                source={item.imageUrl ? { uri: item.imageUrl } : require("../../assets/icon/defaultimage.jpg")}
-                                className="w-[70px] h-[70px] rounded-lg shadow-md"
-                                resizeMode='contain'
-                            />
-                            <View className="ml-3 flex-1">
-                                <Text className="font-bold text-lg text-gray-800">{item.name}</Text>
-                                <Text className="text-gray-600 text-sm">Số lượng: {item.quantity}</Text>
-                            </View>
-                            <Text className="font-semibold text-lg text-orange-500">{item.price.toLocaleString()} VND</Text>
-                        </TouchableOpacity>
-                    )) : (
-                        <Text className="text-center text-gray-500 mt-10">Giỏ hàng trống</Text>
-                    )}
-                </ScrollView>
+  const removeFromCart = async (koiFishIds: number[]) => {
+    try {
+      setIsRemoveLoading(true);
+      // Get user data from AsyncStorage
+      const userData = await AsyncStorage.getItem("userData");
+      if (!userData) {
+        Alert.alert("Error", "You need to login first!");
+        router.push("/(auth)/LoginScreen");
+        return;
+      }
 
+      const parsedToken = JSON.parse(userData);
+      const jwtToken = parsedToken?.accessToken;
 
-                {/* Checkout Section */}
-                <View className='relative bottom-0 left-0 right-0 bg-white p-5 shadow-lg '>
+      // Make the PUT request to remove items from cart
+      const response = await axios.put(
+        "https://kfsapis.azurewebsites.net/api/v1/carts/products-removed",
+        {
+          koiFishIds: koiFishIds,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-                    {/* Shopee Voucher Section */}
-                    <View className='flex-row items-center justify-between mb-2'>
-                        <Text className='text-gray-700 font-semibold'>Koi Farm Shop Membership</Text>
-                        <TouchableOpacity className='bg-orange-100 px-3 py-1 rounded-md'>
-                            <Text className='text-yellow-600 text-sm font-medium'>Gold</Text>
-                        </TouchableOpacity>
-                    </View>
+      // Handle successful removal
+      console.log("Items removed from cart:", response.data);
 
-                    {/* Use Membership */}
-                    <View className="flex-row items-center justify-between mb-3">
-                        <View className="flex-row items-center">
-                            <Entypo name="wallet" size={20} color="#FFA500" />
-                            <Text className="ml-2 text-gray-700 font-medium">5% discount by membership</Text>
-                        </View>
-                        <Checkbox status="checked" color="#FF6B00" />
-                    </View>
+      // Clear selected items that were removed
+      const newSelectedItems = { ...selectedItems };
+      koiFishIds.forEach((id) => {
+        delete newSelectedItems[id];
+      });
+      setSelectedItems(newSelectedItems);
 
-                    {/* Select All & Total Price Section */}
-                    <View className='flex-row items-center justify-between mb-3'>
-                        <View className='flex-row items-center'>
-                            <Checkbox status="unchecked" color="#FF6B00" />
-                            <Text className='ml-2 text-gray-700 font-semibold'>Tất cả</Text>
-                        </View>
-                        <View className='items-end'>
-                            <Text className='text-lg font-bold text-orange-600'>
-                                Tổng thanh toán {totalPrice.toLocaleString()} VND
-                            </Text>
-                            <Text className='text-gray-500 text-sm'>Tiết kiệm đ102k</Text>
-                        </View>
-                    </View>
+      // Refresh cart after removal
+      fetchCart();
 
-                    <CustomButton title="Check out" handlePress={submit}
-                        containerStyles="bg-orange-500 h-14 rounded-lg shadow-md mt-5"
-                        isLoading={isLoading}
-                    />
-                </View>
-            </SafeAreaView>
+      // Show success message
+      Alert.alert("Success", "Items removed from cart successfully!");
+
+      return response.data;
+    } catch (error) {
+      console.error("Error removing items from cart:", error);
+      Alert.alert(
+        "Error",
+        "Failed to remove items from cart. Please try again."
+      );
+    } finally {
+      setIsRemoveLoading(false);
+    }
+  };
+
+  const handleRemoveItem = (productId: number) => {
+    Alert.alert(
+      "Remove Item",
+      "Are you sure you want to remove this item from your cart?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Remove", onPress: () => removeFromCart([productId]) },
+      ]
+    );
+  };
+
+  const handleRemoveSelected = () => {
+    const selectedKoiFishIds = Object.keys(selectedItems)
+      .filter((id) => selectedItems[id])
+      .map((id) => Number(id));
+
+    if (selectedKoiFishIds.length === 0) {
+      Alert.alert("Warning", "No items selected");
+      return;
+    }
+
+    Alert.alert(
+      "Remove Selected Items",
+      `Are you sure you want to remove ${selectedKoiFishIds.length} selected items from your cart?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Remove", onPress: () => removeFromCart(selectedKoiFishIds) },
+      ]
+    );
+  };
+
+  const submit = async () => {
+    try {
+      const selectedKoiFishIds = Object.keys(selectedItems)
+        .filter((id) => selectedItems[id])
+        .map((id) => Number(id));
+
+      if (selectedKoiFishIds.length === 0) {
+        Alert.alert("Warning", "No items selected for checkout");
+        return;
+      }
+
+      setIsLoading(true);
+      const token = await AsyncStorage.getItem("userData");
+      if (!token) {
+        Alert.alert("Error", "You need to login first!");
+        router.push("/(auth)/LoginScreen");
+        return;
+      }
+      const parsedToken = JSON.parse(token);
+      const jwtToken = parsedToken?.accessToken;
+
+      console.log("Selected Koi Fish IDs:", selectedKoiFishIds);
+
+      const queryString = selectedKoiFishIds
+        .map((id) => `koi-fish-ids=${id}`)
+        .join("&");
+      const url = `https://kfsapis.azurewebsites.net/api/v1/orders/check-out?${queryString}`;
+      console.log("Checkout URL:", url);
+
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      router.push(`/OrderDetail?orderId=${selectedKoiFishIds.join("x")}`);
+    } catch (error: any) {
+      console.error("Lỗi khi checkout:", error.response);
+      Alert.alert("Error", "Checkout failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const toggleCheckbox = (productId: number) => {
+    setSelectedItems((prev) => ({
+      ...prev,
+      [productId]: !prev[productId],
+    }));
+  };
+
+  const selectAll = () => {
+    if (cartItems.length === 0) return;
+
+    // Check if all items are already selected
+    const allSelected = cartItems.every(
+      (item: any) => selectedItems[item.productId]
+    );
+
+    // Create new selection state
+    const newSelectedItems: { [key: string]: boolean } = {};
+
+    if (allSelected) {
+      // If all were selected, deselect all (empty object)
+    } else {
+      // Otherwise select all
+      cartItems.forEach((item: any) => {
+        newSelectedItems[item.productId] = true;
+      });
+    }
+
+    setSelectedItems(newSelectedItems);
+  };
+
+  // Calculate selected items count
+  const selectedCount = Object.values(selectedItems).filter(Boolean).length;
+
+  // Calculate selected items total price
+  const selectedTotalPrice = cartItems
+    .filter((item: any) => selectedItems[item.productId])
+    .reduce((sum: number, item: any) => sum + item.price * item.quantity, 0);
+
+  return (
+    <View className="flex-1 bg-gray-100">
+      <SafeAreaView className="flex-1">
+        {/* Go Back */}
+        <View className="flex-row items-center justify-between p-5 bg-white shadow-md">
+          <View className="flex-row items-center">
+            <TouchableOpacity
+              onPress={() => router.back()}
+              className="p-2 rounded-full bg-gray-100"
+            >
+              <Entypo name="chevron-thin-left" size={24} color="black" />
+            </TouchableOpacity>
+            <Text className="ml-4 text-2xl font-bold">Your Cart</Text>
+          </View>
+          {cartItems.length > 0 && (
+            <TouchableOpacity
+              onPress={handleRemoveSelected}
+              disabled={isRemoveLoading || selectedCount === 0}
+              className={`px-4 py-2 rounded-lg ${
+                selectedCount > 0 ? "bg-red-500" : "bg-gray-300"
+              }`}
+            >
+              <Text className="text-white font-medium">
+                {isRemoveLoading ? "Removing..." : "Remove Products"}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
-    )
+
+        {/* Cart Items */}
+        {isLoading && !refreshing ? (
+          <View className="flex-1 justify-center items-center">
+            <Text>Loading cart items...</Text>
+          </View>
+        ) : (
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={["#FF6B00"]} // Android
+                tintColor="#FF6B00" // iOS
+                title="Refreshing cart..." // iOS
+                titleColor="#FF6B00" // iOS
+              />
+            }
+          >
+            {cartItems.length > 0 ? (
+              cartItems.map((item: any, index: any) => (
+                <View
+                  key={index}
+                  className="bg-white rounded-lg shadow-md mx-4 p-4 flex-row items-center mt-5"
+                >
+                  <Checkbox
+                    status={
+                      selectedItems[item.productId] ? "checked" : "unchecked"
+                    }
+                    onPress={() => toggleCheckbox(item.productId)}
+                    color="#FF6B00"
+                  />
+                  <Image
+                    source={
+                      item.imageUrl
+                        ? { uri: item.imageUrl }
+                        : require("../../assets/icon/defaultimage.jpg")
+                    }
+                    className="w-[70px] h-[70px] rounded-lg shadow-md"
+                    resizeMode="contain"
+                  />
+                  <View className="ml-3 flex-1">
+                    <Text className="font-bold text-lg text-gray-800">
+                      {item.name}
+                    </Text>
+                    <Text className="text-gray-600 text-sm">
+                      Số lượng: {item.quantity}
+                    </Text>
+                  </View>
+                  <View className="items-end">
+                    <Text className="font-semibold text-lg text-orange-500">
+                      {item.price.toLocaleString()} VND
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => handleRemoveItem(item.productId)}
+                      className="p-2 mt-2"
+                    >
+                      <Entypo name="trash" size={20} color="red" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <View className="flex-1 justify-center items-center">
+                <Text className="text-center text-gray-500 mt-10">
+                  Your cart is empty
+                </Text>
+                <TouchableOpacity
+                  onPress={() => router.push("/(components)/KoiFishAll")}
+                  className="mt-4 bg-orange-500 px-6 py-3 rounded-lg"
+                >
+                  <Text className="text-white font-semibold">Shop Now</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </ScrollView>
+        )}
+
+        {/* Checkout Section */}
+        {cartItems.length > 0 && (
+          <View className="absolute bottom-0 left-0 right-0 bg-white p-5 shadow-lg">
+            {/* Shopee Voucher Section */}
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-gray-700 font-semibold">
+                Koi Farm Shop Membership
+              </Text>
+              <TouchableOpacity className="bg-orange-100 px-3 py-1 rounded-md">
+                <Text className="text-yellow-600 text-sm font-medium">
+                  Gold
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Use Membership */}
+            <View className="flex-row items-center justify-between mb-3">
+              <View className="flex-row items-center">
+                <Entypo name="wallet" size={20} color="#FFA500" />
+                <Text className="ml-2 text-gray-700 font-medium">
+                  5% discount by membership
+                </Text>
+              </View>
+              <Checkbox status="checked" color="#FF6B00" />
+            </View>
+
+            {/* Select All & Total Price Section */}
+            <View className="flex-row items-center justify-between mb-3">
+              <TouchableOpacity
+                onPress={selectAll}
+                className="flex-row items-center"
+              >
+                <Checkbox
+                  status={
+                    cartItems.length > 0 && selectedCount === cartItems.length
+                      ? "checked"
+                      : "unchecked"
+                  }
+                  color="#FF6B00"
+                />
+                <Text className="ml-2 text-gray-700 font-semibold">
+                  Select All ({selectedCount}/{cartItems.length})
+                </Text>
+              </TouchableOpacity>
+              <View className="items-end">
+                <Text className="text-lg font-bold text-orange-600">
+                  Total: {selectedTotalPrice.toLocaleString()} VND
+                </Text>
+                <Text className="text-gray-500 text-sm">
+                  Save: {Math.round(selectedTotalPrice * 0.05).toLocaleString()}{" "}
+                  VND
+                </Text>
+              </View>
+            </View>
+
+            <CustomButton
+              title={`Checkout (${selectedCount} items)`}
+              handlePress={submit}
+              containerStyles={`${
+                selectedCount > 0 ? "bg-orange-500" : "bg-gray-300"
+              } h-14 rounded-lg shadow-md mt-5`}
+              isLoading={isLoading}
+              disabled={selectedCount === 0}
+            />
+          </View>
+        )}
+      </SafeAreaView>
+    </View>
+  );
 }

@@ -1,4 +1,12 @@
-import { View, Text, Image, ScrollView, TouchableOpacity, Alert, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  Dimensions,
+} from "react-native";
 import React, { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import GlobalApi from "@/utils/GlobalApi";
@@ -20,6 +28,11 @@ interface Koi {
   category: { name: string };
   varieties: string;
   status: string;
+  isConsignedByAccountId: string;
+  isYourConsignedFish: boolean;
+  isInConsignment: boolean;
+  certificateImage: { url: string }[];
+  isConsignedBy: string;
 }
 
 export default function KoiDetailScreen() {
@@ -27,6 +40,7 @@ export default function KoiDetailScreen() {
   const { id } = useLocalSearchParams();
   const [koisById, setKoisById] = useState<Koi | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const submit = async () => {
     try {
@@ -34,16 +48,17 @@ export default function KoiDetailScreen() {
 
       if (!token) {
         Alert.alert("Error", "You need to login first!");
+        router.push("/(auth)/LoginScreen");
         return;
       }
 
       const parsedToken = JSON.parse(token);
       const jwtToken = parsedToken?.accessToken;
-      // console.log(koisById?.id)
+
       const response = await axios.post(
         "https://kfsapis.azurewebsites.net/api/v1/carts/product",
         {
-          koiFishId: koisById?.id
+          koiFishId: koisById?.id,
         },
         {
           headers: {
@@ -63,19 +78,38 @@ export default function KoiDetailScreen() {
   };
 
   useEffect(() => {
+    const getUserId = async () => {
+      const token = await AsyncStorage.getItem("userData");
+      if (token) {
+        const parsedToken = JSON.parse(token);
+        setCurrentUserId(parsedToken?.id);
+      }
+    };
+
+    getUserId();
+  }, []);
+
+  useEffect(() => {
     const fetchKoiDetail = async () => {
       try {
         const apiData = await GlobalApi.getKoisById(id);
-        console.log(id)
+
+        console.log("Complete raw API response:", JSON.stringify(apiData));
+        console.log(apiData.isYourConsignedFish);
         if (!apiData || Object.keys(apiData).length === 0) {
           setKoisById(null);
           return;
         }
 
-        // Kiểm tra imageUrl có phải là mảng không
         const imageUrls = Array.isArray(apiData.imageUrl)
           ? apiData.imageUrl.map((url: string) => ({ url }))
           : [{ url: require("../../assets/icon/defaultimage.jpg") }];
+
+        const certificateImageUrls = Array.isArray(apiData.certificateImageUrl)
+          ? apiData.certificateImageUrl.map((url: string) => ({ url }))
+          : [];
+
+        console.log("apidata: ", apiData.isYourConsignedFish);
 
         const formattedKoi: Koi = {
           id: apiData.id?.toString() || "",
@@ -85,21 +119,29 @@ export default function KoiDetailScreen() {
           size: apiData.size || "Unknown",
           price: apiData.price || 0,
           breeder: apiData.breeders || "Unknown",
-          image: imageUrls, // Đã sửa đổi ở đây
+          image: imageUrls,
           category: { name: apiData.type || "Unknown" },
           bornDate: apiData.bornDate || "Unknown",
           varieties: apiData.varieties || "Unknown",
           status: apiData.status || "Unknown",
+          certificateImage: certificateImageUrls,
+          isConsignedByAccountId: apiData.isConsignedByAccountId || "Unknown",
+          isYourConsignedFish: apiData.isYourConsignedFish || false,
+          isInConsignment: apiData.isInConsignment || false,
+          isConsignedBy: apiData.isConsignedBy || "Unknown",
         };
 
         setKoisById(formattedKoi);
+        console.log(
+          "formattedKoi.isYourConsignedFish: ",
+          formattedKoi.isYourConsignedFish
+        );
       } catch (error) {
         console.error("Error fetching koi details:", error);
       } finally {
         setIsLoading(false);
       }
     };
-
 
     fetchKoiDetail();
   }, [id]);
@@ -136,25 +178,42 @@ export default function KoiDetailScreen() {
     });
   };
 
+  console.log("koisById?.isYourConsignedFish: ", koisById?.isYourConsignedFish);
+
+  console.log(
+    "koisById.isConsignedByAccountId: ",
+    koisById?.isConsignedByAccountId
+  );
+
+  console.log("currentUserId: ", currentUserId);
+
+  console.log("test:", koisById.isConsignedByAccountId === currentUserId);
+
   return (
     <View className="flex-1">
-
-
       <ScrollView
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
         <View className="flex-row">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="ml-5">
-            {(koisById.image.length > 0 ? koisById.image : [{ url: require("../../assets/icon/defaultimage.jpg") }])
-              .map((img, index) => (
-                <Image
-                  key={index}
-                  className="w-[250px] h-[300px] mt-5 mr-5"
-                  source={typeof img.url === "string" ? { uri: img.url } : img.url}
-                  resizeMode="contain"
-                />
-              ))}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="ml-5"
+          >
+            {(koisById.image.length > 0
+              ? koisById.image
+              : [{ url: require("../../assets/icon/defaultimage.jpg") }]
+            ).map((img, index) => (
+              <Image
+                key={index}
+                className="w-[250px] h-[300px] mt-5 mr-5"
+                source={
+                  typeof img.url === "string" ? { uri: img.url } : img.url
+                }
+                resizeMode="contain"
+              />
+            ))}
           </ScrollView>
         </View>
         <View className="m-5">
@@ -169,16 +228,44 @@ export default function KoiDetailScreen() {
             Detail Information of {koisById.name} :
           </Text>
           <View className="mt-3 mb-3">
-            <Text className="text-gray-700 text-lg">💰 Type sell: {koisById.category.name}</Text>
-            <Text className="text-gray-700 text-lg">♂️ Gender: {koisById.sex}</Text>
-            <Text className="text-gray-700 text-lg">📏 Size: {koisById.size} cm</Text>
-            <Text className="text-gray-700 text-lg">📅 Born Date: {formatDate(koisById.bornDate)}</Text>
             <Text className="text-gray-700 text-lg">
-              ✅ Status: <Text className="text-green-500 text-lg font-bold">{koisById.status}</Text>
+              💰 Type sell: {koisById.category.name}
             </Text>
-            <Text className="text-gray-700 text-lg">🎨 Varieties: {koisById.varieties}</Text>
+            <Text className="text-gray-700 text-lg">
+              ♂️ Gender: {koisById.sex}
+            </Text>
+            <Text className="text-gray-700 text-lg">
+              📏 Size: {koisById.size} cm
+            </Text>
+            <Text className="text-gray-700 text-lg">
+              📅 Born Date: {formatDate(koisById.bornDate)}
+            </Text>
+            <Text className="text-gray-700 text-lg">
+              ✅ Status:{" "}
+              <Text className="text-green-500 text-lg font-bold">
+                {koisById.status}
+              </Text>
+            </Text>
+            <Text className="text-gray-700 text-lg">
+              🎨 Varieties: {koisById.varieties}
+            </Text>
 
+            {koisById.isInConsignment && (
+              <View className=" p-1 bg-gray-100 rounded-md">
+                <Text className="text-gray-700 text-lg font-semibold mb-1">
+                  📋 Consignment Information:
+                </Text>
+                <Text className="text-gray-700 text-lg">
+                  🆔 Consigned By: {koisById.isConsignedBy}
+                </Text>
+                {/* <Text className="text-gray-700 text-lg">
+                  👤 Your Consigned Fish:{" "}
+                  {koisById.isYourConsignedFish ? "Yes" : "No"}
+                </Text> */}
+              </View>
+            )}
           </View>
+
           <Text className="font-black text-xl mt-2">Source:</Text>
           <TouchableOpacity
             onPress={() =>
@@ -189,17 +276,50 @@ export default function KoiDetailScreen() {
               {koisById.breeder}
             </Text>
           </TouchableOpacity>
+
+          {koisById.certificateImage &&
+            koisById.certificateImage.length > 0 && (
+              <View className="mt-10">
+                <Text className="font-black text-xl mb-2">
+                  Certificate Images:
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {koisById.certificateImage.map((cert, index) => (
+                    <View key={index} className="mr-3">
+                      <Image
+                        className="w-[200px] h-[250px] rounded-md"
+                        source={{ uri: cert.url }}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
         </View>
       </ScrollView>
 
-      <View>
-        <CustomButton
-          title="Add To Cart"
-          handlePress={submit}
-          containerStyles="mt-10 mb-5 bg-orange-500 h-14 mr-5 ml-5"
-          isLoading={false}
-        />
-      </View>
+      {(!koisById.isInConsignment ||
+        (koisById.isInConsignment &&
+          koisById.isConsignedByAccountId !== currentUserId)) && (
+        <View>
+          <CustomButton
+            title="Add To Cart"
+            handlePress={submit}
+            containerStyles="mt-10 mb-5 bg-orange-500 h-14 mr-5 ml-5"
+            isLoading={false}
+          />
+        </View>
+      )}
+
+      {koisById.isInConsignment &&
+        koisById.isConsignedByAccountId === currentUserId && (
+          <View>
+            <Text className="text-xs font-semibold text-red-500 text-center mb-5 mt-3">
+              You can't buy the products that you consign
+            </Text>
+          </View>
+        )}
     </View>
   );
 }

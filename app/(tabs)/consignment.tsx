@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Children, useEffect, useState } from "react";
 import {
   Text,
   View,
@@ -7,7 +7,6 @@ import {
   ScrollView,
   TextInput,
   Image,
-  Platform,
 } from "react-native";
 import { Checkbox } from "react-native-paper";
 import BrandHeader from "../(components)/consignment/BrandHeader";
@@ -15,62 +14,69 @@ import ConsignmentTermsModal from "../(components)/consignment/ConsignmentTermsM
 import { router, useRouter } from "expo-router";
 import { Dropdown } from "react-native-element-dropdown";
 import * as ImagePicker from "expo-image-picker";
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker from "@react-native-community/datetimepicker";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { format } from "date-fns";
-
+import GlobalApi from "@/utils/GlobalApi";
 
 const genderOptions = [
-  { label: 'Male', value: 'male' },
-  { label: 'Female', value: 'female' },
-  { label: 'Unknown', value: 'unknown' },
+  { label: "Male", value: "male" },
+  { label: "Female", value: "female" },
+  { label: "Unknown", value: "unknown" },
 ];
 
 const consingmentOptions = [
-  { label: 'Online', value: 'online' },
-  { label: 'Offline', value: 'offline' },
+  { label: "Online", value: "online" },
+  { label: "Offline", value: "offline" },
 ];
 
 const sellingOptions = [
-  { label: 'Fixed Price', value: 'sell' },
-  { label: 'Auction', value: 'auction' },
+  { label: "Fixed Price", value: "sale" },
+  { label: "Auction", value: "auction" },
 ];
 
 const uploadImage = async (uri: string) => {
   const formData = new FormData();
-  formData.append('file', {
+  formData.append("file", {
     uri,
-    name: 'image.jpg',
-    type: 'image/jpeg',
+    name: "image.jpg",
+    type: "image/jpeg",
   } as any);
 
   try {
-    const response = await fetch('https://kfsapis.azurewebsites.net/api/v1/media', {
-      method: 'POST',
-      body: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await fetch(
+      "https://kfsapis.azurewebsites.net/api/v1/media",
+      {
+        method: "POST",
+        body: formData,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
 
     const result = await response.json();
     if (response.ok) {
       return result.url;
     } else {
-      console.error('Upload failed:', result);
-      alert('Image upload failed');
+      console.error("Upload failed:", result);
+      alert("Image upload failed");
       return null;
     }
   } catch (error) {
-    console.error('Upload error:', error);
-    alert('An error occurred during image upload');
+    console.error("Upload error:", error);
+    alert("An error occurred during image upload");
     return null;
   }
 };
 
-const pickImages = async (setImages: (images: string[]) => void, images: string[]) => {
-  const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+const pickImages = async (
+  setImages: (images: string[]) => void,
+  images: string[]
+) => {
+  const permissionResult =
+    await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (permissionResult.granted === false) {
     alert("Permission to access gallery is required!");
     return;
@@ -95,11 +101,14 @@ const pickImages = async (setImages: (images: string[]) => void, images: string[
   }
 };
 
-const removeImage = (setImages: (images: string[]) => void, images: string[], index: number) => {
+const removeImage = (
+  setImages: (images: string[]) => void,
+  images: string[],
+  index: number
+) => {
   const updatedImages = images.filter((_, i) => i !== index);
   setImages(updatedImages);
 };
-
 
 const submitConsignment = async (data: any) => {
   const userData = await AsyncStorage.getItem("userData");
@@ -112,19 +121,23 @@ const submitConsignment = async (data: any) => {
   const id = parsedToken?.id;
   const jwtToken = parsedToken?.accessToken;
   try {
-    const response = await axios.post('https://kfsapis.azurewebsites.net/api/Consignment', data,
+    console.log(data);
+    const response = await axios.post(
+      "https://kfsapis.azurewebsites.net/api/Consignment",
+      data,
       {
         headers: {
           Authorization: `Bearer ${jwtToken}`,
           "Content-Type": "application/json",
         },
-      })
-    console.log(response)
-    alert('Consignment created successfully!');
+      }
+    );
+    alert("Consignment created successfully!");
     return response.data;
-  } catch (error) {
-    console.error('API error:', error);
-    alert('Failed to create consignment');
+  } catch (error: any) {
+    // console.error("API error:", error);
+    alert(error.response.data.Message);
+    console.log(error.response.data.Message);
   }
 };
 
@@ -140,48 +153,136 @@ const consignment = () => {
   const [date, setDate] = useState(new Date());
   const [fromDate, setFromDate] = useState(new Date());
   const [toDate, setToDate] = useState(new Date());
-  const [variety, setVariety] = useState('');
-  const [source, setSource] = useState('');
-  const [desiredPrice, setDesiredPrice] = useState('');
-  const [notes, setNotes] = useState('');
+  const [desiredPrice, setDesiredPrice] = useState("");
+  const [notes, setNotes] = useState("");
   const [pickupDate, setPickUpDate] = useState(new Date());
+
+  const [selectedVariety, setSelectedVariety] = useState(null);
+  const [selectedBreeder, setSelectedBreeder] = useState(null);
+  const [selectedVarietyName, setSelectedVarietyName] = useState("");
+  const [selectedBreederName, setSelectedBreederName] = useState("");
+  const [varietiesData, setVarietiesData] = useState([]);
+  const [breedersData, setBreedersData] = useState([]);
+  const [originalVarietiesData, setOriginalVarietiesData] = useState<any>([]);
+  const [originalBreedersData, setOriginalBreedersData] = useState<any>([]);
 
   const [showPicker, setShowPicker] = useState(false);
   const [showFromDatePicker, setShowFromDatePicker] = useState(false);
   const [showToDatePicker, setShowToDatePicker] = useState(false);
-  const [showPickupDatePicker, setShowPickupDatePicker] = useState(false);
 
   const [isDateSelected, setIsDateSelected] = useState(false);
   const [isFromDateSelected, setIsFromDateSelected] = useState(false);
   const [isToDateSelected, setIsToDateSelected] = useState(false);
   const [isPickUpDateSelected, setIsPickUpDateSelected] = useState(false);
 
+  const [loadingBreeders, setLoadingBreeders] = useState(true);
+  const [loadingVarieties, setLoadingVarieties] = useState(true);
 
-  const onChange = (event: any, selectedDate?: Date) => {
-    setShowPicker(Platform.OS === "ios");
-    if (selectedDate) {
-      setDate(selectedDate);
+  const handleSubmit = async () => {
+    if (!isDateSelected || !isFromDateSelected || !isToDateSelected) {
+      alert("Please select all required dates");
+      return;
     }
-  };
 
-  const handleSubmit = () => {
     const consignmentData = {
-      varieties: variety,
+      varieties: selectedVarietyName,
       gender,
-      source,
+      source: selectedBreederName,
       methodOFSelling: selling,
       methodOfConsignment: consignment,
-      bornDate: format(date, 'yyyy-MM-dd'),
-      fromDate: format(fromDate, 'yyyy-MM-dd'),
-      toDate: format(toDate, 'yyyy-MM-dd'),
-      pickupDate: format(pickupDate, 'yyyy-MM-dd'),
+      bornDate: format(date, "yyyy-MM-dd"),
+      fromDate: format(fromDate, "yyyy-MM-dd"),
+      toDate: format(toDate, "yyyy-MM-dd"),
+      // pickupDate: format(pickupDate, "yyyy-MM-dd"),
       desiredPrice: parseFloat(desiredPrice),
       notes: notes,
       imageUrls: koiImages,
       certificateUrls: certificateImages,
     };
 
-    submitConsignment(consignmentData);
+    console.log(consignmentData);
+
+    const result = await submitConsignment(consignmentData);
+    if (result) {
+      router.push("/consignment/ConsignmentList");
+    }
+  };
+
+  useEffect(() => {
+    const fetchVarieties = async () => {
+      try {
+        const response = await GlobalApi.getVarieties();
+        setOriginalVarietiesData(response);
+
+        const formattedVarieties = response.map((variety: any) => ({
+          label: variety.name,
+          value: variety.id,
+        }));
+        setVarietiesData(formattedVarieties);
+      } catch (error) {
+        console.error("Error fetching varieties:", error);
+      } finally {
+        setLoadingVarieties(false);
+      }
+    };
+
+    fetchVarieties();
+  }, []);
+
+  useEffect(() => {
+    const fetchBreeders = async () => {
+      try {
+        const response = await GlobalApi.getBreeders();
+        setOriginalBreedersData(response);
+
+        const formattedBreeders = response.map((breeder: any) => ({
+          label: breeder.name,
+          value: breeder.id,
+        }));
+        setBreedersData(formattedBreeders);
+      } catch (error) {
+        console.error("Error fetching breeders:", error);
+      } finally {
+        setLoadingBreeders(false);
+      }
+    };
+
+    fetchBreeders();
+  }, []);
+
+  const handleVarietyChange = (item: any) => {
+    setSelectedVariety(item.value);
+    const variety = originalVarietiesData.find((v: any) => v.id === item.value);
+    if (variety) {
+      setSelectedVarietyName(variety.name);
+    }
+  };
+
+  const handleBreederChange = (item: any) => {
+    setSelectedBreeder(item.value);
+    const breeder = originalBreedersData.find((b: any) => b.id === item.value);
+    if (breeder) {
+      setSelectedBreederName(breeder.name);
+    }
+  };
+
+  const isDateInPast = (dateToCheck: any) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    dateToCheck.setHours(0, 0, 0, 0);
+    return dateToCheck < today;
+  };
+
+  const isPickupDateValid = (pickupDate: any, toDate: any) => {
+    const pickup = new Date(pickupDate);
+    const to = new Date(toDate);
+
+    pickup.setHours(0, 0, 0, 0);
+    to.setHours(0, 0, 0, 0);
+
+    to.setDate(to.getDate() + 1);
+
+    return pickup >= to;
   };
 
   return (
@@ -219,11 +320,47 @@ const consignment = () => {
           <Text className="font-light text-gray-500">
             Fill basic information for making request
           </Text>
-          <View className="my-5">
+          {/* <View className="my-5">
             <Text className="text-lg">Variety</Text>
-            <TextInput className="border-b border-gray-200 " value={variety}
-              onChangeText={setVariety} />
+            <TextInput
+              className="border-b border-gray-200 "
+              value={variety}
+              onChangeText={setVariety}
+            />
+          </View> */}
+
+          <View className="my-5">
+            <Text className="text-lg mb-4">Variety</Text>
+            {loadingVarieties ? (
+              <Text>Loading varieties...</Text>
+            ) : (
+              <Dropdown
+                data={varietiesData}
+                labelField="label"
+                valueField="value"
+                placeholder="Select variety"
+                value={selectedVariety}
+                onChange={handleVarietyChange}
+                style={{
+                  height: 50,
+                  borderWidth: 1,
+                  borderColor: "#d1d5db",
+                  borderRadius: 8,
+                  paddingHorizontal: 10,
+                  backgroundColor: "white",
+                }}
+                placeholderStyle={{ color: "#6b7280", fontSize: 16 }}
+                selectedTextStyle={{
+                  fontSize: 16,
+                  color: "#1f2937",
+                  fontWeight: "semibold",
+                }}
+                search
+                searchPlaceholder="Search for variety..."
+              />
+            )}
           </View>
+
           <View className="my-5">
             <Text className="text-lg">Date of birth</Text>
 
@@ -232,7 +369,9 @@ const consignment = () => {
               className="border-b border-gray-200 py-3"
             >
               <Text>
-                {isDateSelected ? date.toLocaleDateString('en-GB') : 'Select a date'}
+                {isDateSelected
+                  ? date.toLocaleDateString("en-GB")
+                  : "Select a date"}
               </Text>
             </TouchableOpacity>
 
@@ -241,6 +380,7 @@ const consignment = () => {
                 value={date}
                 mode="date"
                 display="default"
+                maximumDate={new Date()} // Cannot select future dates
                 onChange={(event, selectedDate) => {
                   setShowPicker(false);
                   if (selectedDate) {
@@ -263,20 +403,60 @@ const consignment = () => {
               style={{
                 height: 50,
                 borderWidth: 1,
-                borderColor: '#d1d5db',
+                borderColor: "#d1d5db",
                 borderRadius: 8,
                 paddingHorizontal: 10,
-                backgroundColor: 'white',
+                backgroundColor: "white",
               }}
-              placeholderStyle={{ color: '#6b7280', fontSize: 16 }}
-              selectedTextStyle={{ fontSize: 16, color: '#1f2937', fontWeight: 'semibold' }}
+              placeholderStyle={{ color: "#6b7280", fontSize: 16 }}
+              selectedTextStyle={{
+                fontSize: 16,
+                color: "#1f2937",
+                fontWeight: "semibold",
+              }}
             />
           </View>
-          <View className="my-5">
+          {/* <View className="my-5">
             <Text className="text-lg">Source</Text>
-            <TextInput className="border-b border-gray-200 " value={source}
-              onChangeText={setSource} />
+            <TextInput
+              className="border-b border-gray-200 "
+              value={source}
+              onChangeText={setSource}
+            />
+          </View> */}
+
+          <View className="my-5">
+            <Text className="text-lg mb-4">Breeder</Text>
+            {loadingBreeders ? (
+              <Text>Loading breeders...</Text>
+            ) : (
+              <Dropdown
+                data={breedersData}
+                labelField="label"
+                valueField="value"
+                placeholder="Select breeder"
+                value={selectedBreeder}
+                onChange={handleBreederChange}
+                style={{
+                  height: 50,
+                  borderWidth: 1,
+                  borderColor: "#d1d5db",
+                  borderRadius: 8,
+                  paddingHorizontal: 10,
+                  backgroundColor: "white",
+                }}
+                placeholderStyle={{ color: "#6b7280", fontSize: 16 }}
+                selectedTextStyle={{
+                  fontSize: 16,
+                  color: "#1f2937",
+                  fontWeight: "semibold",
+                }}
+                search
+                searchPlaceholder="Search for breeder..."
+              />
+            )}
           </View>
+
           <View className="my-5">
             <Text className="text-lg mb-4">Method of Consignment</Text>
             <Dropdown
@@ -289,13 +469,17 @@ const consignment = () => {
               style={{
                 height: 50,
                 borderWidth: 1,
-                borderColor: '#d1d5db',
+                borderColor: "#d1d5db",
                 borderRadius: 8,
                 paddingHorizontal: 10,
-                backgroundColor: 'white',
+                backgroundColor: "white",
               }}
-              placeholderStyle={{ color: '#6b7280', fontSize: 16 }}
-              selectedTextStyle={{ fontSize: 16, color: '#1f2937', fontWeight: 'semibold' }}
+              placeholderStyle={{ color: "#6b7280", fontSize: 16 }}
+              selectedTextStyle={{
+                fontSize: 16,
+                color: "#1f2937",
+                fontWeight: "semibold",
+              }}
             />
           </View>
           <View className="my-5">
@@ -310,20 +494,27 @@ const consignment = () => {
               style={{
                 height: 50,
                 borderWidth: 1,
-                borderColor: '#d1d5db',
+                borderColor: "#d1d5db",
                 borderRadius: 8,
                 paddingHorizontal: 10,
-                backgroundColor: 'white',
+                backgroundColor: "white",
               }}
-              placeholderStyle={{ color: '#6b7280', fontSize: 16 }}
-              selectedTextStyle={{ fontSize: 16, color: '#1f2937', fontWeight: 'semibold' }}
+              placeholderStyle={{ color: "#6b7280", fontSize: 16 }}
+              selectedTextStyle={{
+                fontSize: 16,
+                color: "#1f2937",
+                fontWeight: "semibold",
+              }}
             />
           </View>
 
           <View className="my-5">
             <Text className="text-lg">Desired Price</Text>
-            <TextInput className="border-b border-gray-200 " value={desiredPrice}
-              onChangeText={setDesiredPrice} />
+            <TextInput
+              className="border-b border-gray-200 "
+              value={desiredPrice}
+              onChangeText={setDesiredPrice}
+            />
           </View>
 
           <View className="my-5">
@@ -334,7 +525,9 @@ const consignment = () => {
               className="border-b border-gray-200 py-3"
             >
               <Text>
-                {isFromDateSelected ? fromDate.toLocaleDateString('en-GB') : 'Select a date'}
+                {isFromDateSelected
+                  ? fromDate.toLocaleDateString("en-GB")
+                  : "Select a date"}
               </Text>
             </TouchableOpacity>
 
@@ -343,11 +536,18 @@ const consignment = () => {
                 value={fromDate}
                 mode="date"
                 display="calendar"
+                minimumDate={new Date()} // Today is the minimum date
                 onChange={(event, selectedDate) => {
                   setShowFromDatePicker(false);
                   if (selectedDate) {
                     setFromDate(selectedDate);
                     setIsFromDateSelected(true);
+
+                    // If to date is before from date, update to date
+                    if (toDate < selectedDate) {
+                      setToDate(selectedDate);
+                      setIsToDateSelected(true);
+                    }
                   }
                 }}
               />
@@ -361,7 +561,9 @@ const consignment = () => {
               className="border-b border-gray-200 py-3"
             >
               <Text>
-                {isToDateSelected ? toDate.toLocaleDateString('en-GB') : 'Select a date'}
+                {isToDateSelected
+                  ? toDate.toLocaleDateString("en-GB")
+                  : "Select a date"}
               </Text>
             </TouchableOpacity>
 
@@ -370,39 +572,22 @@ const consignment = () => {
                 value={toDate}
                 mode="date"
                 display="calendar"
+                minimumDate={fromDate}
                 onChange={(event, selectedDate) => {
                   setShowToDatePicker(false);
                   if (selectedDate) {
                     setToDate(selectedDate);
                     setIsToDateSelected(true);
-                  }
-                }}
-              />
-            )}
-          </View>
 
-          <View className="my-5">
-            <Text className="text-lg">Pick up date</Text>
-
-            <TouchableOpacity
-              onPress={() => setShowPickupDatePicker(true)}
-              className="border-b border-gray-200 py-3"
-            >
-              <Text>
-                {isPickUpDateSelected ? pickupDate.toLocaleDateString('en-GB') : 'Select a date'}
-              </Text>
-            </TouchableOpacity>
-
-            {showPickupDatePicker && (
-              <DateTimePicker
-                value={pickupDate}
-                mode="date"
-                display="calendar"
-                onChange={(event, selectedDate) => {
-                  setShowPickupDatePicker(false);
-                  if (selectedDate) {
-                    setPickUpDate(selectedDate);
-                    setIsPickUpDateSelected(true);
+                    if (
+                      isPickUpDateSelected &&
+                      !isPickupDateValid(pickupDate, selectedDate)
+                    ) {
+                      const newPickupDate = new Date(selectedDate);
+                      newPickupDate.setDate(newPickupDate.getDate() + 1);
+                      setPickUpDate(newPickupDate);
+                      setIsPickUpDateSelected(true);
+                    }
                   }
                 }}
               />
@@ -411,8 +596,11 @@ const consignment = () => {
 
           <View className="my-5">
             <Text className="text-lg">Notes</Text>
-            <TextInput className="border-b border-gray-200 " value={notes}
-              onChangeText={setNotes} />
+            <TextInput
+              className="border-b border-gray-200 "
+              value={notes}
+              onChangeText={setNotes}
+            />
           </View>
 
           {/* Image Picker for Koi Images */}
@@ -421,7 +609,10 @@ const consignment = () => {
             <View className="flex-row flex-wrap mt-3">
               {koiImages.map((image, index) => (
                 <View key={index} className="relative m-2">
-                  <Image source={{ uri: image }} className="w-24 h-24 rounded-lg" />
+                  <Image
+                    source={{ uri: image }}
+                    className="w-24 h-24 rounded-lg"
+                  />
                   <TouchableOpacity
                     className="absolute -top-2 -right-2 bg-red-500 p-1 rounded-full"
                     onPress={() => removeImage(setKoiImages, koiImages, index)}
@@ -441,14 +632,25 @@ const consignment = () => {
 
           {/* Image Picker for Certificate Images */}
           <View className="w-4/5 self-center mt-8">
-            <Text className="font-bold text-2xl">Upload Certificate Images</Text>
+            <Text className="font-bold text-2xl">
+              Upload Certificate Images
+            </Text>
             <View className="flex-row flex-wrap mt-3">
               {certificateImages.map((image, index) => (
                 <View key={index} className="relative m-2">
-                  <Image source={{ uri: image }} className="w-24 h-24 rounded-lg" />
+                  <Image
+                    source={{ uri: image }}
+                    className="w-24 h-24 rounded-lg"
+                  />
                   <TouchableOpacity
                     className="absolute -top-2 -right-2 bg-red-500 p-1 rounded-full"
-                    onPress={() => removeImage(setCertificateImages, certificateImages, index)}
+                    onPress={() =>
+                      removeImage(
+                        setCertificateImages,
+                        certificateImages,
+                        index
+                      )
+                    }
                   >
                     <Text className="text-white font-bold">X</Text>
                   </TouchableOpacity>
@@ -457,10 +659,14 @@ const consignment = () => {
             </View>
 
             <TouchableOpacity
-              onPress={() => pickImages(setCertificateImages, certificateImages)}
+              onPress={() =>
+                pickImages(setCertificateImages, certificateImages)
+              }
               className="bg-gray-200 py-3 px-4 rounded-lg items-center mt-3"
             >
-              <Text className="text-gray-700">Upload More Certificate Pictures</Text>
+              <Text className="text-gray-700">
+                Upload More Certificate Pictures
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

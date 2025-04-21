@@ -6,22 +6,12 @@ const Master_URL = 'https://us-west-2.cdn.hygraph.com/content/cm5sq0qhf01dq07v06
 const API_BASE_URL = 'https://kfsapis.azurewebsites.net/api/v1';
 
 const getSlider = async () => {
-    const query = gql`
-    query GetSlider {
-        sliders {
-            id
-            name
-            image {
-                url
-            }
-        }
-    }
-  `
     try {
-        const result = await request(Master_URL, query);
-        return result;
+        const response = await axios.get(`https://kfsapis.azurewebsites.net/api/Blog/GetAll`);
+        return response.data;
     } catch (error) {
-        console.error("Error fetching sliders:", error);
+        console.error('Error fetching kois:', error);
+        throw error;
     }
 }
 
@@ -42,27 +32,13 @@ const getCategories = async () => {
 }
 
 const getKois = async () => {
-    const query = gql`
-    query GetKoi {
-            kois {
-                id
-                name
-                sex
-                description
-                size
-                price
-                breeder
-                image {
-                    url
-                }
-                category{
-                name
-                }
-            }
+    try {
+        const response = await axios.get(`https://kfsapis.azurewebsites.net/api/v1/products?page-number=1&page-size=10`);
+        return response.data.data;
+    } catch (error) {
+        console.error('Error fetching koi breeders:', error);
+        throw error;
     }
-  `
-    const result = await request(Master_URL, query);
-    return result;
 }
 
 const getKoisList = async (

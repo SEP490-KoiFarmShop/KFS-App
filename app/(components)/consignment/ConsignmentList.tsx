@@ -1,53 +1,82 @@
 import React from "react";
-import {
-  View,
-  Text,
-  SafeAreaView,
-  ScrollView,
-} from "react-native";
+import { View, Text, SafeAreaView, TouchableOpacity } from "react-native";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
-import BrandHeader from "./BrandHeader";
 import TableScreen from "./TableScreen";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 const Tab = createMaterialTopTabNavigator();
 
 const PendingScreen = () => <TableScreen status="Pending" />;
-const RePaymentScreen = () => <TableScreen status="PendingPayout" />;
+const RePaymentScreen = () => <TableScreen status="PendingDepositPayment" />;
 const ApprovedScreen = () => <TableScreen status="Approved" />;
 const RejectedScreen = () => <TableScreen status="Rejected" />;
-const SuccessScreen = () => <TableScreen status="Reserved" />;
+const AcceptedScreen = () => <TableScreen status="Accepted" />;
+const CompletedScreen = () => <TableScreen status="Completed" />;
 
 const ConsignmentTabs = () => {
   return (
     <Tab.Navigator
+      style={{ flex: 1 }}
       screenOptions={{
         tabBarLabelStyle: { fontSize: 14, fontWeight: "bold" },
         tabBarIndicatorStyle: { backgroundColor: "red" },
         tabBarActiveTintColor: "red",
         tabBarInactiveTintColor: "gray",
         tabBarScrollEnabled: true,
+        tabBarStyle: { elevation: 0 },
       }}
     >
       <Tab.Screen name="Pending" component={PendingScreen} />
-      <Tab.Screen name="Re-Payment" component={RePaymentScreen} />
       <Tab.Screen name="Approved" component={ApprovedScreen} />
       <Tab.Screen name="Rejected" component={RejectedScreen} />
-      <Tab.Screen name="Success" component={SuccessScreen} />
+      <Tab.Screen name="Accepted" component={AcceptedScreen} />
+      <Tab.Screen name="Completed" component={CompletedScreen} />
+      <Tab.Screen name="Re-Payment" component={RePaymentScreen} />
     </Tab.Navigator>
   );
 };
 
-const ConsignmentList = () => {
+const ConsignmentList = ({ navigation }: any) => {
+  const router = useRouter();
+  const handleBack = () => {
+    router.push(`/(tabs)/consignment`);
+  };
+
   return (
-    <SafeAreaView className="w-full h-full bg-white flex-1">
-      <BrandHeader />
-      <View className="w-4/5 self-center mt-8">
-        <Text className="font-bold text-3xl">Consignment List</Text>
-        <Text className="font-light text-gray-500 mb-8">
-          Used for shipping orders
-        </Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
+      <View
+        style={{
+          width: "80%",
+          alignSelf: "center",
+          marginTop: 32,
+          flexDirection: "row",
+          alignItems: "center",
+        }}
+      >
+        <TouchableOpacity
+          onPress={handleBack}
+          style={{
+            padding: 8,
+            marginRight: 10,
+          }}
+        >
+          <Ionicons name="arrow-back" size={24} color="black" />
+        </TouchableOpacity>
+
+        <View>
+          <Text style={{ fontWeight: "bold", fontSize: 24 }}>
+            Consignment List
+          </Text>
+          <Text style={{ color: "gray", marginBottom: 16 }}>
+            Used for shipping orders
+          </Text>
+        </View>
       </View>
-      <ConsignmentTabs />
+
+      <View style={{ flex: 1 }}>
+        <ConsignmentTabs />
+      </View>
     </SafeAreaView>
   );
 };
