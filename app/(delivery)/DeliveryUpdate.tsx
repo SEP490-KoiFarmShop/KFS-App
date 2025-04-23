@@ -29,10 +29,21 @@ export default function DeliveryUpdate() {
   const [cancelReasons, setCancelReasons] = useState<any[]>([]);
   const [selectedCancelReason, setSelectedCancelReason] = useState<string>("");
 
-  const statusOptions = [
-    // { label: "Assigned", value: "Assigned" },
-    { label: "Delivering", value: "Delivering" },
+  const statusOptions = [{ label: "Delivering", value: "Delivering" }];
+
+  const statusDeliveringOptions = [
     { label: "Delivered", value: "Delivered" },
+    { label: "Delivery Failed", value: "DeliveryFailed" },
+    { label: "Rejected", value: "Rejected" },
+  ];
+
+  // const statusDeliveredOptions = [
+  //   { label: "Delivered", value: "Delivered" },
+  //   { label: "DeliveryFailed", value: "DeliveryFailed" },
+  // ];
+
+  const statusDeliveryFailedOptions = [
+    { label: "Delivering", value: "Delivering" },
     { label: "DeliveryFailed", value: "DeliveryFailed" },
   ];
 
@@ -247,21 +258,57 @@ export default function DeliveryUpdate() {
 
         <View>
           <Text className="mb-2 font-medium">Status</Text>
-          <Dropdown
-            style={{
-              height: 50,
-              borderColor: "#ccc",
-              borderWidth: 1,
-              borderRadius: 8,
-              paddingHorizontal: 12,
-            }}
-            data={statusOptions}
-            labelField="label"
-            valueField="value"
-            placeholder="Select status"
-            value={status}
-            onChange={(item) => setStatus(item.value)}
-          />
+          {status === "Assigned" && (
+            <Dropdown
+              style={{
+                height: 50,
+                borderColor: "#ccc",
+                borderWidth: 1,
+                borderRadius: 8,
+                paddingHorizontal: 12,
+              }}
+              data={statusOptions}
+              labelField="label"
+              valueField="value"
+              placeholder="Select status"
+              value={status}
+              onChange={(item) => setStatus(item.value)}
+            />
+          )}
+          {status === "Delivering" && (
+            <Dropdown
+              style={{
+                height: 50,
+                borderColor: "#ccc",
+                borderWidth: 1,
+                borderRadius: 8,
+                paddingHorizontal: 12,
+              }}
+              data={statusDeliveringOptions}
+              labelField="label"
+              valueField="value"
+              placeholder="Select status"
+              value={status}
+              onChange={(item) => setStatus(item.value)}
+            />
+          )}
+          {status === "DeliveryFailed" && (
+            <Dropdown
+              style={{
+                height: 50,
+                borderColor: "#ccc",
+                borderWidth: 1,
+                borderRadius: 8,
+                paddingHorizontal: 12,
+              }}
+              data={statusDeliveryFailedOptions}
+              labelField="label"
+              valueField="value"
+              placeholder="Select status"
+              value={status}
+              onChange={(item) => setStatus(item.value)}
+            />
+          )}
         </View>
 
         {status === "DeliveryFailed" && (

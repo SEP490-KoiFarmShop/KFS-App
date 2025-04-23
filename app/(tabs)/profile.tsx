@@ -144,33 +144,28 @@ export default function Profile() {
         </View>
       </View>
 
-      {/* Mid-month Sale */}
-      <View className="bg-white p-4 mt-2">
-        <Text className="font-semibold">Ngày 15 Sale Giữa Tháng</Text>
-        <View className="flex-row justify-around mt-3">
-          <IconLabel icon="flash" label="Khung Giờ Săn Sale" library="Entypo" />
-          <IconLabel
-            icon="live-tv"
-            label="Shopee Live"
-            library="MaterialIcons"
-          />
-        </View>
-      </View>
-
       {/* My Utilities */}
       <View className="bg-white p-4 mt-2">
         <Text className="font-semibold">Tiện ích của tôi</Text>
         <View className="flex-row justify-around mt-3">
-          <TouchableOpacity onPress={() => router.push(`/(components)/Wallet`)}>
+          <TouchableOpacity onPress={() => router.push(`(components)/Wallet`)}>
             <IconLabel icon="wallet" label="My Wallet" library="Entypo" />
           </TouchableOpacity>
-          <IconLabel icon="calendar" label="SPayLater" library="Feather" />
-          <IconLabel icon="gift" label="Shopee Xu" />
+          <TouchableOpacity
+            onPress={() => router.push(`(components)/WalletTransaction`)}
+          >
+            <IconLabel
+              icon="calendar"
+              label="Wallet Transaction History"
+              library="Feather"
+            />
+          </TouchableOpacity>
+          {/* <IconLabel icon="gift" label="Shopee Xu" />
           <IconLabel
             icon="local-offer"
             label="Kho Voucher"
             library="MaterialIcons"
-          />
+          /> */}
         </View>
       </View>
 

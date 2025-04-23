@@ -13,6 +13,7 @@ export default function ContractDetail() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [customerData, setCustomerData] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const contractRef = useRef(null);
 
@@ -104,13 +105,38 @@ export default function ContractDetail() {
     }
   };
 
+  useEffect(() => {
+    const fetchEmail = async () => {
+      try {
+        const token = await AsyncStorage.getItem("userData");
+
+        if (!token) {
+          Alert.alert("Error", "You need to login first!");
+          router.push("/(auth)/LoginScreen");
+          return;
+        }
+
+        const parsedToken = JSON.parse(token);
+        const emailAccount = parsedToken?.email;
+
+        if (emailAccount) {
+          setEmail(emailAccount);
+        }
+      } catch (error) {
+        console.error("Failed to fetch token:", error);
+      }
+    };
+
+    fetchEmail();
+  }, []);
+
   const sendOtp = async (contractParams: any) => {
     if (!email) {
       Alert.alert("Lỗi", "Vui lòng nhập email");
       return;
     }
     try {
-      console.log(email);
+      // console.log(email);
       await axios.post(`https://kfsapis.azurewebsites.net/api/Otp/send-otp`, {
         email: email,
       });
@@ -160,12 +186,17 @@ export default function ContractDetail() {
   const handleConfirm = async () => {
     if (!email.trim()) {
       Alert.alert("Lỗi", "Vui lòng nhập email trước khi xác nhận!");
+      setIsSubmitting(false);
       return;
     }
+
+    setIsSubmitting(true);
+
     try {
       const imageUri = await captureAndSaveImage();
       if (!imageUri) {
         Alert.alert("Lỗi", "Không thể chụp ảnh hợp đồng!");
+        setIsSubmitting(false);
         return;
       }
 
@@ -181,6 +212,7 @@ export default function ContractDetail() {
 
       if (isNaN(consignmentId)) {
         console.error("ID không hợp lệ:", id);
+        setIsSubmitting(false);
         return;
       }
 
@@ -199,6 +231,7 @@ export default function ContractDetail() {
     } catch (error) {
       console.error("Lỗi trong quá trình xác nhận:", error);
       Alert.alert("Lỗi", "Đã xảy ra lỗi trong quá trình xử lý hợp đồng.");
+      setIsSubmitting(false);
     }
   };
 
@@ -358,7 +391,7 @@ export default function ContractDetail() {
           </View>
 
           <View className="mb-4">
-            <Text className="font-bold">Nhập email để nhận OTP</Text>
+            <Text className="font-bold">Email để nhận OTP</Text>
             <TextInput
               label="Email"
               value={email}
@@ -366,17 +399,23 @@ export default function ContractDetail() {
               keyboardType="email-address"
               autoCapitalize="none"
               className="border p-2 rounded-md"
+              disabled={true}
+              editable={false}
+              style={{ backgroundColor: "#f0f0f0" }}
             />
           </View>
         </ScrollView>
       </ViewShot>
 
       <TouchableOpacity
-        className="bg-green-500 p-3 rounded-lg mt-4"
+        className={`p-3 rounded-lg mt-4 ${
+          isSubmitting ? "bg-gray-400" : "bg-green-500"
+        }`}
         onPress={handleConfirm}
+        disabled={isSubmitting}
       >
         <Text className="text-center text-white font-bold">
-          Make a contract
+          {isSubmitting ? "Processing..." : "Make a contract"}
         </Text>
       </TouchableOpacity>
     </View>

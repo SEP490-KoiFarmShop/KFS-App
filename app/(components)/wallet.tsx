@@ -33,11 +33,38 @@ interface WalletData {
   updatedAt: string;
 }
 
+interface CustomerDetail {
+  id: number;
+  fullName: string;
+  phoneNumber: string;
+  address: string;
+  loyaltyPoints: number;
+  totalSpending: number;
+  createdAt: string;
+  updatedAt: string;
+  accountId: string;
+  membershipRank: string;
+  image: string;
+  email: string;
+  bankName?: string;
+  bankAccountName?: string;
+  bankAccountNumber?: string;
+}
+
+interface Bank {
+  id: number;
+  name: string;
+  code: string;
+  bin: string;
+  shortName: string;
+  logo: string;
+}
+
 export default function Wallet() {
   const router = useRouter();
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState<any>("");
   const [depositLoading, setDepositLoading] = useState(false);
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [depositModalVisible, setDepositModalVisible] = useState(false);
@@ -46,6 +73,9 @@ export default function Wallet() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [quickAmounts] = useState([100000, 200000, 500000, 1000000, 2000000]);
+  const [customer, setCustomer] = useState<CustomerDetail | null>(null);
+  const [bankList, setBankList] = useState<Bank[]>([]);
+  const [matchedBank, setMatchedBank] = useState<Bank | null>(null);
 
   // Format currency in VND
   const formatCurrency = (amount: number) => {
@@ -74,7 +104,6 @@ export default function Wallet() {
       const response = await axios.get(
         "https://kfsapis.azurewebsites.net/api/Wallet/GetWalletForCustomer",
         {
-          params: { customerId: id },
           headers: {
             Authorization: `Bearer ${jwtToken}`,
             "Content-Type": "application/json",
@@ -94,7 +123,33 @@ export default function Wallet() {
   // Load wallet on mount
   useEffect(() => {
     fetchWalletInfo();
+    fetchCustomerDetail();
+    fetchBanks();
   }, [fetchWalletInfo]);
+
+  useEffect(() => {
+    if (bankList.length > 0 && customer?.bankName) {
+      const bank = bankList.find(
+        (b) =>
+          b.code === customer.bankName ||
+          b.name === customer.bankName ||
+          b.shortName === customer.bankName
+      );
+      console.log("bank: ", bank);
+      setMatchedBank(bank || null);
+    }
+  }, [bankList, customer]);
+
+  const fetchBanks = async () => {
+    try {
+      const response = await axios.get("https://api.vietqr.io/v2/banks");
+      if (response.data.data) {
+        setBankList(response.data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching banks:", err);
+    }
+  };
 
   // Handle deposit
   const handleDeposit = async () => {
@@ -118,7 +173,9 @@ export default function Wallet() {
         "https://kfsapis.azurewebsites.net/api/Wallet/RechargeWalletForCustomer",
         null,
         {
-          params: { moneyAmount: Number(depositAmount) },
+          params: {
+            moneyAmount: Number(depositAmount),
+          },
           headers: {
             Authorization: `Bearer ${jwtToken}`,
             "Content-Type": "application/json",
@@ -132,7 +189,7 @@ export default function Wallet() {
             router.push("Wallet");
           })
           .catch(() => {
-            Alert.alert("Lỗi", "Không thể mở liên kết thanh toán.");
+            Alert.alert("Error", "Unable to open payment link.");
           });
       } else {
         Alert.alert("Error", response.data.return_message || "Deposit failed");
@@ -171,11 +228,17 @@ export default function Wallet() {
       const parsedToken = JSON.parse(userData);
       const jwtToken = parsedToken?.accessToken;
 
+      const requestBody = {
+        bankAccountNumber: customer?.bankAccountNumber || "",
+        bankAccountName: customer?.bankAccountName || "",
+        bankName: customer?.bankName || "",
+        amount: Number(withdrawAmount),
+      };
+
       const response = await axios.post(
         "https://kfsapis.azurewebsites.net/api/Wallet/CreateWithdrawRequest",
-        null,
+        requestBody,
         {
-          params: { amount: Number(withdrawAmount) },
           headers: {
             Authorization: `Bearer ${jwtToken}`,
             "Content-Type": "application/json",
@@ -208,6 +271,37 @@ export default function Wallet() {
       setDepositAmount(amount.toString());
     } else {
       setWithdrawAmount(amount.toString());
+    }
+  };
+
+  const fetchCustomerDetail = async () => {
+    const token = await AsyncStorage.getItem("userData");
+    if (!token) {
+      Alert.alert("Error", "You need to login first!");
+      router.push("/(auth)/LoginScreen");
+      return;
+    }
+    const parsedToken = JSON.parse(token);
+    const jwtToken = parsedToken?.accessToken;
+    try {
+      setLoading(true);
+      const response = await axios.get<CustomerDetail>(
+        "https://kfsapis.azurewebsites.net/api/v1/auth/GetCustomerDetail",
+        {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log(response.data);
+      setCustomer(response.data);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching customer details:", err);
+      setError("Unable to load customer information. Please try again later.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -454,6 +548,29 @@ export default function Wallet() {
               </TouchableOpacity>
             </View>
 
+            {(customer?.bankName ||
+              customer?.bankAccountNumber ||
+              customer?.bankAccountName) && (
+              <InfoSection
+                title="Bank Information"
+                items={[
+                  {
+                    label: "Bank",
+                    value: customer?.bankName || "Not updated",
+                  },
+                  {
+                    label: "Account Name",
+                    value: customer?.bankAccountName || "Not updated",
+                  },
+                  {
+                    label: "Account Number",
+                    value: customer?.bankAccountNumber || "Not updated",
+                  },
+                ]}
+                matchedBank={matchedBank}
+              />
+            )}
+
             <Text className="text-gray-600 mb-2">Enter amount (VND)</Text>
             <TextInput
               className="border border-gray-300 p-4 rounded-xl text-lg mb-4"
@@ -525,6 +642,51 @@ export default function Wallet() {
           </View>
         </View>
       </Modal>
+    </View>
+  );
+}
+
+// Helper component for info sections
+type InfoItem = {
+  label: string;
+  value: string;
+  customComponent?: React.ReactNode;
+};
+
+function InfoSection({
+  title,
+  items,
+  matchedBank,
+}: {
+  title: string;
+  items: InfoItem[];
+  matchedBank?: Bank | null;
+}) {
+  return (
+    <View className="mb-4">
+      <Text className="text-lg font-bold text-gray-800 mb-2">{title}</Text>
+      {items.map((item, index) => (
+        <View key={index} className="flex-row py-2 border-b border-gray-100">
+          <Text className="text-gray-500 w-1/3">{item.label}</Text>
+          {title === "Bank Information" &&
+          item.label === "Bank" &&
+          matchedBank ? (
+            <View className="flex-row items-center flex-1">
+              <Image
+                source={{ uri: matchedBank.logo }}
+                className="w-6 h-6 mr-2"
+              />
+              <Text className="text-gray-800 font-medium flex-1">
+                {matchedBank.name} ({matchedBank.code})
+              </Text>
+            </View>
+          ) : (
+            <Text className="text-gray-800 font-medium flex-1">
+              {item.value}
+            </Text>
+          )}
+        </View>
+      ))}
     </View>
   );
 }

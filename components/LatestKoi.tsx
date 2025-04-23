@@ -14,7 +14,7 @@ export default function LatestKoi() {
     const fetchCategories = async () => {
       try {
         const response = await GlobalApi.getKois();
-        console.log("test: ", response);
+        // console.log("test: ", response);
         setKois(response);
       } catch (error) {
         console.error("Error fetching kois:", error);

@@ -12,6 +12,7 @@ import { AntDesign, FontAwesome } from "@expo/vector-icons";
 import axios from "axios";
 import { RadioButton } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Entypo from "@expo/vector-icons/Entypo";
 
 const paymentMethods = [
   { id: 1, name: "Banking" },
@@ -209,6 +210,16 @@ export default function OTPSuccess() {
 
   return (
     <View className="flex-1 bg-white justify-center items-center px-6">
+      <View className="flex-row items-center">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="p-2 rounded-full bg-gray-100"
+        >
+          <Entypo name="chevron-thin-left" size={24} color="black" />
+        </TouchableOpacity>
+        {/* <Text className="ml-4 text-2xl font-bold">Your Cart</Text> */}
+      </View>
+
       <View className="w-24 h-24 border-2 border-orange-500 rounded-full flex items-center justify-center mb-6">
         <AntDesign name="check" size={48} color="#FB923C" />
       </View>

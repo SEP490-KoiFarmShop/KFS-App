@@ -5,7 +5,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { ActivityIndicator } from "react-native-paper";
 import OrderItem from "@/components/OrderItem";
-import { canGoBack } from "expo-router/build/global-state/routing";
 
 export default function OrderTable({ status }: any) {
   const [orders, setOrders] = useState<any[]>([]);
@@ -83,10 +82,29 @@ export default function OrderTable({ status }: any) {
 
   return (
     <View className="p-4 bg-gray-100 flex-1">
-      {orders.length === 0 ? (
+      {/* {orders.length === 0 ? (
         <View className="flex-1 justify-center items-center">
           <Text className="text-lg text-gray-500">Không có hàng</Text>
         </View>
+      ) : (
+        <FlatList */}
+      {orders.length === 0 ? (
+        <FlatList
+          data={[]}
+          keyExtractor={() => "empty"}
+          renderItem={null}
+          ListEmptyComponent={
+            <View
+              className="flex-1 justify-center items-center"
+              style={{ height: 300 }}
+            >
+              <Text className="text-lg text-gray-500">No Orders</Text>
+            </View>
+          }
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        />
       ) : (
         <FlatList
           data={orders}

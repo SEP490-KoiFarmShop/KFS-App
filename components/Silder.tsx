@@ -52,7 +52,8 @@ const Silder = () => {
               source={
                 isValidUrl(item.imageUrl)
                   ? { uri: item.imageUrl }
-                  : require("../assets/icon/defaultSlider.png")
+                  : // : require("../assets/icon/defaultsilder.jpg")
+                    require("../assets/icon/defaultsilder.jpg")
               }
             />
             <View className="px-3 py-2 bg-white w-[270]">

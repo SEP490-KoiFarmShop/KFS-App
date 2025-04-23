@@ -27,6 +27,19 @@ interface CustomerDetail {
   membershipRank: string;
   image: string;
   email: string;
+  // Add the missing bank information fields
+  bankName?: string;
+  bankAccountName?: string;
+  bankAccountNumber?: string;
+}
+
+interface Bank {
+  id: number;
+  name: string;
+  code: string;
+  bin: string;
+  shortName: string;
+  logo: string;
 }
 
 export default function CustomerDetailScreen() {
@@ -34,10 +47,38 @@ export default function CustomerDetailScreen() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const [bankList, setBankList] = useState<Bank[]>([]);
+  const [matchedBank, setMatchedBank] = useState<Bank | null>(null);
 
   useEffect(() => {
     fetchCustomerDetail();
+    fetchBanks();
   }, []);
+
+  useEffect(() => {
+    if (bankList.length > 0 && customer?.bankName) {
+      // Try to match by name or code
+      const bank = bankList.find(
+        (b) =>
+          b.code === customer.bankName ||
+          b.name === customer.bankName ||
+          b.shortName === customer.bankName
+      );
+      console.log("bank: ", bank);
+      setMatchedBank(bank || null);
+    }
+  }, [bankList, customer]);
+
+  const fetchBanks = async () => {
+    try {
+      const response = await axios.get("https://api.vietqr.io/v2/banks");
+      if (response.data.data) {
+        setBankList(response.data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching banks:", err);
+    }
+  };
 
   const handleEditPress = () => {
     router.push("/profile/EditProfile");
@@ -63,6 +104,7 @@ export default function CustomerDetailScreen() {
           },
         }
       );
+      console.log(response.data);
       setCustomer(response.data);
       setError(null);
     } catch (err) {
@@ -178,6 +220,30 @@ export default function CustomerDetailScreen() {
             ]}
           />
 
+          {/* Add Bank Information Section */}
+          {(customer.bankName ||
+            customer.bankAccountNumber ||
+            customer.bankAccountName) && (
+            <InfoSection
+              title="Thông tin ngân hàng"
+              items={[
+                {
+                  label: "Ngân hàng",
+                  value: customer.bankName || "Chưa cập nhật",
+                },
+                {
+                  label: "Tên tài khoản",
+                  value: customer.bankAccountName || "Chưa cập nhật",
+                },
+                {
+                  label: "Số tài khoản",
+                  value: customer.bankAccountNumber || "Chưa cập nhật",
+                },
+              ]}
+              matchedBank={matchedBank}
+            />
+          )}
+
           <InfoSection
             title="Thông tin tài khoản"
             items={[
@@ -199,33 +265,59 @@ export default function CustomerDetailScreen() {
         </View>
 
         {/* Actions */}
-        <View className="flex-row justify-center p-4 bg-gray-50 border-t border-gray-200">
+        {/* <View className="flex-row justify-center p-4 bg-gray-50 border-t border-gray-200">
           <TouchableOpacity
             className="bg-green-500 py-2 px-4 rounded-lg flex-row items-center"
             onPress={() => Alert.alert("Lịch sử giao dịch")}
           >
             <Text className="text-white font-medium">Lịch sử giao dịch</Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
       </View>
     </ScrollView>
   );
 }
 
 // Helper component for info sections
+
 type InfoItem = {
   label: string;
   value: string;
+  customComponent?: React.ReactNode;
 };
 
-function InfoSection({ title, items }: { title: string; items: InfoItem[] }) {
+function InfoSection({
+  title,
+  items,
+  matchedBank,
+}: {
+  title: string;
+  items: InfoItem[];
+  matchedBank?: Bank | null;
+}) {
   return (
     <View className="mb-4">
       <Text className="text-lg font-bold text-gray-800 mb-2">{title}</Text>
       {items.map((item, index) => (
         <View key={index} className="flex-row py-2 border-b border-gray-100">
           <Text className="text-gray-500 w-1/3">{item.label}</Text>
-          <Text className="text-gray-800 font-medium flex-1">{item.value}</Text>
+          {title === "Thông tin ngân hàng" &&
+          item.label === "Ngân hàng" &&
+          matchedBank ? (
+            <View className="flex-row items-center flex-1">
+              <Image
+                source={{ uri: matchedBank.logo }}
+                className="w-6 h-6 mr-2"
+              />
+              <Text className="text-gray-800 font-medium flex-1">
+                {matchedBank.name} ({matchedBank.code})
+              </Text>
+            </View>
+          ) : (
+            <Text className="text-gray-800 font-medium flex-1">
+              {item.value}
+            </Text>
+          )}
         </View>
       ))}
     </View>

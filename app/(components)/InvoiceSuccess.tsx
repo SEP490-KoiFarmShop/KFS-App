@@ -18,7 +18,7 @@ export default function InvoiceSuccess() {
     <View className="flex-1 items-center justify-center">
       <View className="w-full h-[55%] bg-orange-500 items-center justify-center rounded-b-3xl">
         <Image
-          source={require("../../assets/icon/order-success.png")}
+          source={require("../../assets/icon/ordersuccess.jpg")}
           className="w-56 h-56"
           resizeMode="contain"
         />

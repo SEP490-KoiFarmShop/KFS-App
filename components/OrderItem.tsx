@@ -197,7 +197,7 @@ export default function OrderItem({ item }: any) {
             )}
           </TouchableOpacity>
 
-          {item.status === "Delivered" && (
+          {/* {item.status === "Delivered" && (
             <TouchableOpacity
               className="bg-green-500 px-3 py-1 rounded-md flex-1 items-center ml-2"
               onPress={confirmFinishOrder}
@@ -211,7 +211,7 @@ export default function OrderItem({ item }: any) {
                 </Text>
               )}
             </TouchableOpacity>
-          )}
+          )} */}
         </View>
       )}
     </View>

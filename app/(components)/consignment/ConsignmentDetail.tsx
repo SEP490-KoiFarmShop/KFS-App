@@ -346,6 +346,14 @@ const ConsignmentDetail: React.FC = () => {
           </Text>
         </View>
 
+        {/* <View className="flex-row items-center mb-2">
+          <FontAwesome5 name="calendar-alt" size={16} color="#666" />
+          <Text className="text-gray-700 ml-2">Pick up Date: </Text>
+          <Text className="font-medium">
+            {formatDate(consignmentData?.pickupDate) || "Unknown"}
+          </Text>
+        </View> */}
+
         <View className="flex-row items-center mb-2">
           <FontAwesome5 name="store" size={16} color="#666" />
           <Text className="text-gray-700 ml-2">Source: </Text>

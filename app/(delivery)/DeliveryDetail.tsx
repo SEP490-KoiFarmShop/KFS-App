@@ -116,7 +116,7 @@ export default function DeliveryDetail() {
     router.push(`/DeliveryUpdate?deliveryId=${deliveryId}`);
   };
 
-  const canUpdate = !["Delivered"].includes(delivery.status);
+  const canUpdate = !["Delivered", "Rejected"].includes(delivery.status);
 
   return (
     <SafeAreaView className="flex-1 bg-white">

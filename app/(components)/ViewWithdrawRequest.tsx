@@ -266,7 +266,7 @@ export default function ViewWithdrawRequest() {
                   </Text>
                   <Text className="text-xs text-gray-500 mt-1">Rejected</Text>
                 </View>
-                <View className="items-center">
+                {/* <View className="items-center">
                   <Text className="text-2xl font-bold text-green-500">
                     {
                       withdrawRequests.filter(
@@ -275,7 +275,7 @@ export default function ViewWithdrawRequest() {
                     }
                   </Text>
                   <Text className="text-xs text-gray-500 mt-1">Completed</Text>
-                </View>
+                </View> */}
               </View>
             </View>
 

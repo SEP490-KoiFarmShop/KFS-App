@@ -2,7 +2,7 @@
   "expo": {
     "name": "Koi_farm_shop_app",
     "slug": "koi_farm_shop_app",
-    "scheme": "koi_farm_shop_app",
+    "scheme": "koifarmshop",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -20,13 +20,22 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.avid1ty.koi_farm_shop_app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "a6782ac5-db05-4fec-9bf9-3f1ce1bdc8bd"
+      }
+    }
   }
 }

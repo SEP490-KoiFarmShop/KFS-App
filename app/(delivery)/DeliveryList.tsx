@@ -12,6 +12,7 @@ const AssignedScreen = () => <DeliveryItem status="Assigned" />;
 const DeliveringScreen = () => <DeliveryItem status="Delivering" />;
 const DeliveredScreen = () => <DeliveryItem status="Delivered" />;
 const DeliveryFailedScreen = () => <DeliveryItem status="DeliveryFailed" />;
+const RejectedScreen = () => <DeliveryItem status="Rejected" />;
 
 const DeliveryTabs = () => {
   return (
@@ -28,6 +29,7 @@ const DeliveryTabs = () => {
       <Tab.Screen name="Delivering" component={DeliveringScreen} />
       <Tab.Screen name="Delivered" component={DeliveredScreen} />
       <Tab.Screen name="Delivery Failed" component={DeliveryFailedScreen} />
+      <Tab.Screen name="Rejected" component={RejectedScreen} />
     </Tab.Navigator>
   );
 };

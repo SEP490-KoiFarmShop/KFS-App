@@ -30,6 +30,9 @@ interface CustomerDetail {
   accountId: string;
   membershipRank: string;
   image?: string;
+  bankAccountNumber?: string;
+  bankAccountName?: string;
+  bankName?: string;
 }
 
 interface UpdateProfilePayload {
@@ -37,6 +40,9 @@ interface UpdateProfilePayload {
   phoneNumber: string;
   address: string;
   image: string | null;
+  bankAccountNumber: string;
+  bankAccountName: string;
+  bankName: string;
 }
 
 interface LocationData {
@@ -56,12 +62,28 @@ interface Ward {
   Name: string;
 }
 
+interface Bank {
+  id: string;
+  name: string;
+  code: string;
+  bin: string;
+  shortName: string;
+  logo: string;
+  transferSupported: number;
+  lookupSupported: number;
+  short_name: string;
+  support: number;
+  isTransfer: number;
+  swift_code: string;
+}
+
 export default function EditProfile() {
   const [customer, setCustomer] = useState<CustomerDetail | null>(null);
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [jwtToken, setJwtToken] = useState<string>("");
+  const [imageUploading, setImageUploading] = useState<boolean>(false);
 
   // Form state
   const [fullName, setFullName] = useState<string>("");
@@ -69,11 +91,23 @@ export default function EditProfile() {
   const [streetAddress, setStreetAddress] = useState<string>("");
   const [image, setImage] = useState<string | null>(null);
 
+  // Bank account state
+  const [bankAccountNumber, setBankAccountNumber] = useState<string>("");
+  const [bankAccountName, setBankAccountName] = useState<string>("");
+  const [bankName, setBankName] = useState<string>("");
+  const [bankList, setBankList] = useState<Bank[]>([]);
+  const [loadingBanks, setLoadingBanks] = useState<boolean>(true);
+
   // Location data
   const [locations, setLocations] = useState<LocationData[]>([]);
   const [selectedCity, setSelectedCity] = useState<string>("");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
   const [selectedWard, setSelectedWard] = useState<string>("");
+
+  // Temporary location names for auto-filling
+  const [tempWardName, setTempWardName] = useState<string>("");
+  const [tempDistrictName, setTempDistrictName] = useState<string>("");
+  const [tempCityName, setTempCityName] = useState<string>("");
 
   // Derived data
   const [districts, setDistricts] = useState<District[]>([]);
@@ -84,6 +118,9 @@ export default function EditProfile() {
     fullName: "",
     phoneNumber: "",
     streetAddress: "",
+    bankAccountNumber: "",
+    bankAccountName: "",
+    bankName: "",
   });
 
   useEffect(() => {
@@ -109,7 +146,7 @@ export default function EditProfile() {
             },
           }
         );
-
+        console.log(response.data);
         setCustomer(response.data);
         setFullName(response.data.fullName);
         setPhoneNumber(response.data.phoneNumber);
@@ -122,6 +159,17 @@ export default function EditProfile() {
         if (response.data.image) {
           setImage(response.data.image);
         }
+
+        // Set bank account information if it exists
+        if (response.data.bankAccountNumber) {
+          setBankAccountNumber(response.data.bankAccountNumber);
+        }
+        if (response.data.bankAccountName) {
+          setBankAccountName(response.data.bankAccountName);
+        }
+        if (response.data.bankName) {
+          setBankName(response.data.bankName);
+        }
       } catch (error) {
         console.error("Error fetching user:", error);
         Alert.alert("Lỗi", "Không thể tải thông tin người dùng");
@@ -132,7 +180,23 @@ export default function EditProfile() {
 
     fetchUser();
     fetchLocationData();
+    fetchBankList();
   }, []);
+
+  const fetchBankList = async () => {
+    setLoadingBanks(true);
+    try {
+      const response = await axios.get("https://api.vietqr.io/v2/banks");
+      if (response.data && response.data.data) {
+        setBankList(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching bank list:", error);
+      Alert.alert("Lỗi", "Không thể tải danh sách ngân hàng");
+    } finally {
+      setLoadingBanks(false);
+    }
+  };
 
   const fetchLocationData = async () => {
     try {
@@ -158,27 +222,88 @@ export default function EditProfile() {
   // Parse the address string to extract components
   const parseAddress = (address: string) => {
     try {
-      // Example address: "123 Phan Chu Trinh, phường Tân Thành, quận Tân Phú, Thành phố Hồ Chí Minh"
+      // Example address: "123 Phan Chu Trinh, phường Phường Tân Thành, quận Quận Tân Phú, Thành phố Hồ Chí Minh"
       const parts = address.split(",").map((part) => part.trim());
 
       if (parts.length >= 1) {
         setStreetAddress(parts[0]);
       }
 
-      // We'll set the location dropdowns when the location data is loaded
+      // Extract ward name (format: "phường Phường Tân Thành")
+      const wardPart = parts.find((part) =>
+        part.toLowerCase().includes("phường")
+      );
+      if (wardPart) {
+        const wardName = wardPart.replace(/phường/i, "").trim();
+        setTempWardName(wardName);
+      }
+
+      // Extract district name (format: "quận Quận Tân Phú")
+      const districtPart = parts.find((part) =>
+        part.toLowerCase().includes("quận")
+      );
+      if (districtPart) {
+        const districtName = districtPart.replace(/quận/i, "").trim();
+        setTempDistrictName(districtName);
+      }
+
+      // Check for city name (Ho Chi Minh City in this case)
+      const cityPart = parts.find((part) =>
+        part.toLowerCase().includes("thành phố")
+      );
+      if (cityPart) {
+        setTempCityName(cityPart.trim());
+      }
     } catch (error) {
       console.error("Error parsing address:", error);
     }
   };
+
+  // Auto-set district and ward based on address data
+  useEffect(() => {
+    if (locations.length > 0 && (tempDistrictName || tempWardName)) {
+      // Find HCMC in locations data (already selected in fetchLocationData)
+      const cityData = locations.find((city) =>
+        city.Name.toLowerCase().includes("hồ chí minh")
+      );
+
+      if (cityData && tempDistrictName) {
+        // Find the district by name
+        const district = cityData.Districts.find((dist) =>
+          dist.Name.toLowerCase().includes(tempDistrictName.toLowerCase())
+        );
+
+        if (district) {
+          setSelectedDistrict(district.Id);
+          setWards(district.Wards);
+
+          // Now find the ward if available
+          if (tempWardName) {
+            setTimeout(() => {
+              const ward = district.Wards.find((w) =>
+                w.Name.toLowerCase().includes(tempWardName.toLowerCase())
+              );
+
+              if (ward) {
+                setSelectedWard(ward.Id);
+              }
+            }, 500); // Small delay to ensure wards are populated
+          }
+        }
+      }
+    }
+  }, [locations, tempDistrictName, tempWardName, districts]);
 
   useEffect(() => {
     if (locations.length > 0 && selectedCity) {
       const cityData = locations.find((city) => city.Id === selectedCity);
       if (cityData) {
         setDistricts(cityData.Districts);
-        setSelectedDistrict("");
-        setSelectedWard("");
-        setWards([]);
+        if (!tempDistrictName) {
+          setSelectedDistrict("");
+          setSelectedWard("");
+          setWards([]);
+        }
       }
     }
   }, [selectedCity, locations]);
@@ -190,10 +315,65 @@ export default function EditProfile() {
       );
       if (districtData) {
         setWards(districtData.Wards);
-        setSelectedWard("");
+        if (!tempWardName) {
+          setSelectedWard("");
+        }
       }
     }
   }, [selectedDistrict, districts]);
+
+  // Updated image selection and upload function using FormData
+  const pickImage = async () => {
+    const { status: permStatus } =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permStatus !== "granted") {
+      Alert.alert("Permission denied", "We need access to your photos.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const selectedUri = result.assets[0].uri;
+
+      try {
+        setImageUploading(true);
+        const formData = new FormData();
+        formData.append("file", {
+          uri: selectedUri,
+          type: "image/jpeg",
+          name: `photo_${Date.now()}.jpg`,
+        } as any);
+
+        const res = await axios.post(
+          "https://kfsapis.azurewebsites.net/api/v1/media",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${jwtToken}`,
+            },
+          }
+        );
+
+        const imageUrl = res.data?.url;
+        if (imageUrl) {
+          setImage(imageUrl);
+        } else {
+          Alert.alert("Upload Failed", "No URL returned.");
+        }
+      } catch (error) {
+        console.error(error);
+        Alert.alert("Lỗi", "Không thể tải ảnh lên. Vui lòng thử lại sau.");
+      } finally {
+        setImageUploading(false);
+      }
+    }
+  };
 
   const handleUpdateProfile = async () => {
     // Validate form
@@ -202,6 +382,9 @@ export default function EditProfile() {
       fullName: "",
       phoneNumber: "",
       streetAddress: "",
+      bankAccountNumber: "",
+      bankAccountName: "",
+      bankName: "",
     };
 
     if (!fullName.trim()) {
@@ -227,6 +410,27 @@ export default function EditProfile() {
       hasError = true;
     }
 
+    // Validate bank account info only if any of the fields are filled
+    if (bankAccountNumber || bankAccountName || bankName) {
+      if (!bankAccountNumber.trim()) {
+        newErrors.bankAccountNumber = "Vui lòng nhập số tài khoản";
+        hasError = true;
+      } else if (!/^\d{8,16}$/.test(bankAccountNumber)) {
+        newErrors.bankAccountNumber = "Số tài khoản không hợp lệ";
+        hasError = true;
+      }
+
+      if (!bankAccountName.trim()) {
+        newErrors.bankAccountName = "Vui lòng nhập tên chủ tài khoản";
+        hasError = true;
+      }
+
+      if (!bankName) {
+        newErrors.bankName = "Vui lòng chọn ngân hàng";
+        hasError = true;
+      }
+    }
+
     setErrors(newErrors);
 
     if (hasError) return;
@@ -246,6 +450,9 @@ export default function EditProfile() {
       phoneNumber: phoneNumber,
       address: fullAddress,
       image: image,
+      bankAccountNumber: bankAccountNumber,
+      bankAccountName: bankAccountName,
+      bankName: bankName,
     };
 
     setSubmitting(true);
@@ -272,6 +479,9 @@ export default function EditProfile() {
           phoneNumber: phoneNumber,
           address: fullAddress,
           image: image || customer.image,
+          bankAccountNumber: bankAccountNumber,
+          bankAccountName: bankAccountName,
+          bankName: bankName,
         });
       }
     } catch (error) {
@@ -282,42 +492,19 @@ export default function EditProfile() {
     }
   };
 
-  const selectImage = async () => {
-    try {
-      const permissionResult =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (!permissionResult.granted) {
-        Alert.alert("Quyền truy cập", "Cần cấp quyền truy cập thư viện ảnh");
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-        base64: true,
-      });
-
-      if (!result.canceled && result.assets && result.assets[0]) {
-        // Convert to base64 if not already
-        let imageBase64 = result.assets[0].base64;
-
-        if (!imageBase64 && result.assets[0].uri) {
-          // Logic to convert to base64 if needed
-          // This is a placeholder - actual implementation would depend on your requirements
-          // setImage(result.assets[0].uri);
-          Alert.alert("Thông báo", "Cần hình ảnh dạng base64");
-          return;
-        }
-
-        setImage(`data:image/jpeg;base64,${imageBase64}`);
-      }
-    } catch (error) {
-      console.error("Error picking image:", error);
-      Alert.alert("Lỗi", "Không thể chọn ảnh");
-    }
+  // Custom bank picker component with logos
+  const BankPickerItem = ({ bank }: { bank: Bank }) => {
+    return (
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <Image
+          source={{ uri: bank.logo }}
+          style={{ width: 24, height: 24, marginRight: 8 }}
+        />
+        <Text>
+          {bank.name} ({bank.code})
+        </Text>
+      </View>
+    );
   };
 
   if (loading) {
@@ -342,15 +529,21 @@ export default function EditProfile() {
 
       {/* Avatar Section */}
       <View className="items-center mt-6 mb-4">
-        <TouchableOpacity onPress={selectImage}>
-          {image ? (
+        <TouchableOpacity onPress={pickImage} disabled={imageUploading}>
+          {imageUploading ? (
+            <View className="w-24 h-24 rounded-full bg-gray-200 items-center justify-center">
+              <ActivityIndicator size="small" color="#FF8C00" />
+            </View>
+          ) : image ? (
             <Image source={{ uri: image }} className="w-24 h-24 rounded-full" />
           ) : (
             <View className="w-24 h-24 rounded-full bg-gray-300 items-center justify-center">
               <Entypo name="camera" size={32} color="#666" />
             </View>
           )}
-          <Text className="text-blue-500 text-center mt-2">Thay đổi ảnh</Text>
+          <Text className="text-blue-500 text-center mt-2">
+            {imageUploading ? "Đang tải..." : "Thay đổi ảnh"}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -413,7 +606,12 @@ export default function EditProfile() {
         <View className="border border-gray-300 rounded-lg mb-3 pl-2 pr-2 bg-white">
           <Picker
             selectedValue={selectedCity}
-            onValueChange={(itemValue) => setSelectedCity(itemValue)}
+            onValueChange={(itemValue) => {
+              setSelectedCity(itemValue);
+              // Clear temp values to let normal selection behavior take over
+              setTempDistrictName("");
+              setTempWardName("");
+            }}
             mode="dropdown"
           >
             <Picker.Item label="Chọn tỉnh thành" value="" />
@@ -427,7 +625,11 @@ export default function EditProfile() {
         <View className="border border-gray-300 rounded-lg mb-3 pl-2 pr-2 bg-white">
           <Picker
             selectedValue={selectedDistrict}
-            onValueChange={(itemValue) => setSelectedDistrict(itemValue)}
+            onValueChange={(itemValue) => {
+              setSelectedDistrict(itemValue);
+              // Clear temp ward value to let normal selection behavior take over
+              setTempWardName("");
+            }}
             mode="dropdown"
             enabled={districts.length > 0}
           >
@@ -456,6 +658,77 @@ export default function EditProfile() {
             ))}
           </Picker>
         </View>
+      </View>
+
+      {/* Bank Account Section */}
+      <View className="bg-white rounded-lg shadow-sm mx-4 p-4 mt-4">
+        <Text className="text-lg font-bold mb-2">
+          Thông tin tài khoản ngân hàng
+        </Text>
+
+        <Text className="text-lg font-bold mb-1">Chọn ngân hàng</Text>
+        <View className="border border-gray-300 rounded-lg mb-3 pl-2 pr-2 bg-white">
+          {loadingBanks ? (
+            <View className="py-2 items-center">
+              <ActivityIndicator size="small" color="#FF8C00" />
+            </View>
+          ) : (
+            <Picker
+              selectedValue={bankName}
+              onValueChange={(itemValue) => setBankName(itemValue)}
+              mode="dropdown"
+            >
+              <Picker.Item label="Chọn ngân hàng" value="" />
+              {bankList.map((bank) => (
+                <Picker.Item
+                  key={bank.bin}
+                  label={`${bank.name} (${bank.code})`}
+                  value={bank.code}
+                />
+              ))}
+            </Picker>
+          )}
+        </View>
+        {errors.bankName ? (
+          <HelperText type="error" visible={!!errors.bankName}>
+            {errors.bankName}
+          </HelperText>
+        ) : null}
+
+        <Text className="text-lg font-bold mb-1">Số tài khoản</Text>
+        <TextInput
+          value={bankAccountNumber}
+          onChangeText={setBankAccountNumber}
+          className="bg-white border border-gray-300 rounded-lg mb-1"
+          placeholder="Nhập số tài khoản"
+          keyboardType="number-pad"
+          mode="outlined"
+          outlineColor="#D1D5DB"
+          activeOutlineColor="#FF8C00"
+          error={!!errors.bankAccountNumber}
+        />
+        {errors.bankAccountNumber ? (
+          <HelperText type="error" visible={!!errors.bankAccountNumber}>
+            {errors.bankAccountNumber}
+          </HelperText>
+        ) : null}
+
+        <Text className="text-lg font-bold mb-1 mt-2">Tên chủ tài khoản</Text>
+        <TextInput
+          value={bankAccountName}
+          onChangeText={setBankAccountName}
+          className="bg-white border border-gray-300 rounded-lg mb-1"
+          placeholder="Nhập tên chủ tài khoản"
+          mode="outlined"
+          outlineColor="#D1D5DB"
+          activeOutlineColor="#FF8C00"
+          error={!!errors.bankAccountName}
+        />
+        {errors.bankAccountName ? (
+          <HelperText type="error" visible={!!errors.bankAccountName}>
+            {errors.bankAccountName}
+          </HelperText>
+        ) : null}
       </View>
 
       {/* Membership Info */}
@@ -513,9 +786,8 @@ export default function EditProfile() {
         />
       </View>
 
-      {/* Action Buttons */}
       <View className="flex-row mx-4 mb-8">
-        <View className="flex-1 mr-2">
+        {/* <View className="flex-1 mr-2">
           <CustomButton
             title="Lịch sử đấu giá"
             handlePress={() => {
@@ -524,10 +796,10 @@ export default function EditProfile() {
             containerStyles="bg-blue-500 h-14"
             isLoading={false}
           />
-        </View>
-        <View className="flex-1 ml-2">
+        </View> */}
+        <View className="flex-1 ml-2 mr-2">
           <CustomButton
-            title="Ví của bạn"
+            title="Your Wallet"
             handlePress={() => {
               router.push("/Wallet");
             }}
