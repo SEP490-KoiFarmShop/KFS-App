@@ -40,16 +40,19 @@ const SignUpScreen = () => {
   const handleSignUp = async () => {
     if (!validateForm()) return;
 
+    const params = {
+      fullName,
+      email,
+      password,
+      phoneNumber,
+    };
+    // console.log("Sign Up Params:", params);
+
     setLoading(true);
     try {
       const response = await axios.post(
         "https://kfsapis.azurewebsites.net/api/v1/auth/register",
-        {
-          fullName,
-          email,
-          password,
-          phoneNumber,
-        }
+        params
       );
 
       if (response.data) {
@@ -62,7 +65,7 @@ const SignUpScreen = () => {
       }
     } catch (error: any) {
       const errorMessage =
-        error.response?.data || "Registration failed. Please try again.";
+        error.response.data.Message || "Registration failed. Please try again.";
       Alert.alert("Error", errorMessage);
     } finally {
       setLoading(false);

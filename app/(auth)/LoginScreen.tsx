@@ -95,6 +95,7 @@ const LoginScreen = () => {
               placeholder="Enter Password"
               value={password}
               onChangeText={setPassword}
+              autoCapitalize="none"
             />
             <TouchableOpacity className="flex items-end mb-5 mt-2">
               <Text className="text-gray-700">Forgot Password?</Text>

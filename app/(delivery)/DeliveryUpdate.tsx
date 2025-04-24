@@ -292,6 +292,25 @@ export default function DeliveryUpdate() {
               onChange={(item) => setStatus(item.value)}
             />
           )}
+
+          {status === "Delivered" && (
+            <Dropdown
+              style={{
+                height: 50,
+                borderColor: "#ccc",
+                borderWidth: 1,
+                borderRadius: 8,
+                paddingHorizontal: 12,
+              }}
+              data={statusDeliveringOptions}
+              labelField="label"
+              valueField="value"
+              placeholder="Select status"
+              value={status}
+              onChange={(item) => setStatus(item.value)}
+            />
+          )}
+
           {status === "DeliveryFailed" && (
             <Dropdown
               style={{

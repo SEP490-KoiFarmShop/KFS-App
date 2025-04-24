@@ -9,7 +9,7 @@ const BrandHeader = () => {
         source={logo}
         className="w-[70px] h-[70px] rounded-full mx-3 my-3"
       />
-      <Text className="font-bold text-lg">KOI FARM SHOP</Text>
+      <Text className="font-semibold text-sm">Koi Farm Shop</Text>
     </View>
   );
 };

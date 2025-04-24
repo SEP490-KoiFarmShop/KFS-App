@@ -35,6 +35,7 @@ export default function OrderDetail() {
   >(null);
   const [balance, setBalance] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [customer, setCustomer] = useState<any>(null);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -67,8 +68,11 @@ export default function OrderDetail() {
         );
 
         setOrderData(response.data);
-      } catch (error) {
-        console.error("Lỗi khi lấy chi tiết đơn hàng:", error);
+      } catch (error: any) {
+        console.error(
+          "Lỗi khi lấy chi tiết đơn hàng:",
+          error.response.data.Message
+        );
       } finally {
         setIsLoading(false);
       }
@@ -113,6 +117,39 @@ export default function OrderDetail() {
     };
 
     fetchBalance();
+  }, []);
+
+  useEffect(() => {
+    const fetchUserDetail = async () => {
+      try {
+        const userData = await AsyncStorage.getItem("userData");
+        if (!userData) {
+          router.push("/(auth)/LoginScreen");
+          return;
+        }
+
+        const parsedToken = JSON.parse(userData);
+        const jwtToken = parsedToken?.accessToken;
+
+        const response = await axios.get(
+          `https://kfsapis.azurewebsites.net/api/v1/auth/GetCustomerDetail`,
+          {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        console.log(response.data);
+        if (response.data) {
+          setCustomer(response.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch user information:", err);
+      }
+    };
+
+    fetchUserDetail();
   }, []);
 
   const handleConfirmOrder = async () => {
@@ -183,8 +220,8 @@ export default function OrderDetail() {
         Alert.alert("Error", "Failed to place the order. Please try again.");
       }
     } catch (error: any) {
-      console.error("Order error:", error.response?.data || error);
-      Alert.alert("Error", "Failed to place the order. Please try again.");
+      console.error("Order error:", error.response?.data.Message || error);
+      Alert.alert(error.response?.data.Message);
     } finally {
       setIsProcessing(false);
     }
@@ -219,19 +256,43 @@ export default function OrderDetail() {
         {/* Cart Items */}
         <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
           <View className="p-4 bg-white shadow-md rounded-lg my-2 mx-3">
-            {fullName && contactPhoneNumber && address ? (
+            {customer.fullName && customer.phoneNumber && customer.address ? (
               <View>
-                <Text className="text-lg font-semibold text-gray-800">
-                  Recipient Information
+                <View className="flex-row justify-between items-center mb-2">
+                  <Text className="text-lg font-semibold text-gray-800">
+                    Recipient Information
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push({
+                        pathname: "/AddOrderInfor",
+                        params: {
+                          orderId: orderId,
+                          fullName: customer.fullName,
+                          phoneNumber: customer.phoneNumber,
+                          address: customer.address,
+                        },
+                      })
+                    }
+                    className="flex-row items-center bg-gray-100 px-3 py-1 rounded-full"
+                  >
+                    <AntDesign name="edit" size={16} color="#FF6B00" />
+                    <Text className="ml-1 text-orange-500 font-medium">
+                      Edit
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                <Text className="text-gray-600 mt-1">
+                  <Text className="font-bold">Name: </Text>{" "}
+                  {fullName || customer.fullName}
                 </Text>
                 <Text className="text-gray-600 mt-1">
-                  <Text className="font-bold">Name:</Text> {fullName}
+                  <Text className="font-bold">Phone:</Text>{" "}
+                  {contactPhoneNumber || customer.phoneNumber}
                 </Text>
                 <Text className="text-gray-600 mt-1">
-                  <Text className="font-bold">Phone:</Text> {contactPhoneNumber}
-                </Text>
-                <Text className="text-gray-600 mt-1">
-                  <Text className="font-bold">Address:</Text> {address}
+                  <Text className="font-bold">Address:</Text>{" "}
+                  {address || customer.address}
                 </Text>
               </View>
             ) : (
@@ -277,7 +338,6 @@ export default function OrderDetail() {
             <Text className="text-center text-gray-500 mt-10">Cart empty</Text>
           )}
 
-          {/* Payment Method Selection */}
           <View className="p-4 bg-white shadow-md rounded-lg my-2 mx-3 mt-32">
             <Text className="text-lg font-semibold text-gray-800">
               Select Payment Method
@@ -322,25 +382,28 @@ export default function OrderDetail() {
             <View className="flex-row justify-between">
               <Text className="text-gray-700 text-lg">Subtotal</Text>
               <Text className="text-gray-700 text-lg">
-                {orderData.paymentDetails["Total Amount"].toLocaleString()} VND
+                {Math.floor(
+                  orderData.paymentDetails["Total Amount"]
+                ).toLocaleString()}{" "}
+                VND
               </Text>
             </View>
             <View className="flex-row justify-between mt-2">
               <Text className="text-gray-700 text-lg">Shipping Cost</Text>
               <Text className="text-gray-700 text-lg">
-                {orderData.paymentDetails["Shipping Cost"].toLocaleString()} VND
+                {Math.floor(
+                  orderData.paymentDetails["Shipping Cost"]
+                ).toLocaleString()}{" "}
+                VND
               </Text>
             </View>
-            {/* <View className="flex-row justify-between mt-2">
-                            <Text className="text-orange-500 font-semibold text-lg">Membership Discount</Text>
-                            <Text className="text-orange-500 font-semibold text-lg">
-                                - {orderData.paymentDetails["Membership Discount"].toLocaleString()} VND
-                            </Text>
-                        </View> */}
             <View className="flex-row justify-between mt-3 border-t border-gray-300 pt-2">
               <Text className="font-bold text-xl">Total</Text>
               <Text className="font-bold text-xl text-orange-500">
-                {orderData.paymentDetails["Final Amount"].toLocaleString()} VND
+                {Math.floor(
+                  orderData.paymentDetails["Final Amount"]
+                ).toLocaleString()}{" "}
+                VND
               </Text>
             </View>
           </View>

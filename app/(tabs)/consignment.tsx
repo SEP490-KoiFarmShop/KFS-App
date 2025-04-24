@@ -297,10 +297,10 @@ const consignment = () => {
             Fill in the data for profile. It will take a couple of minutes.
           </Text>
           <View className="flex-row items-center space-x-2 ">
-            <Checkbox
+            {/* <Checkbox
               status={checked ? "checked" : "unchecked"}
               onPress={() => setChecked(!checked)}
-            />
+            /> */}
             <View className="flex-row items-center">
               <Text className="text-gray-700">I agree with </Text>
               <TouchableOpacity onPress={() => setModalVisible(true)}>
