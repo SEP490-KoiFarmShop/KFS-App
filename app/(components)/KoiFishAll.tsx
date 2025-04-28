@@ -1,5 +1,11 @@
-import { View, FlatList, TouchableOpacity, Text } from "react-native";
-import React, { useEffect, useState } from "react";
+import {
+  View,
+  FlatList,
+  TouchableOpacity,
+  Text,
+  RefreshControl,
+} from "react-native";
+import React, { useEffect, useState, useCallback } from "react";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import GlobalApi from "@/utils/GlobalApi";
 import DetailKoiItem from "@/components/DetailKoiItem";
@@ -8,6 +14,8 @@ import { ActivityIndicator, MD2Colors } from "react-native-paper";
 import Entypo from "@expo/vector-icons/Entypo";
 import { FontAwesome } from "@expo/vector-icons";
 import AntDesign from "@expo/vector-icons/AntDesign";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface Koi {
   id: number;
@@ -28,9 +36,13 @@ export default function KoiFishAll() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [cart, setCart] = useState<any>([]);
+  const [cartItems, setCartItems] = useState<any>([]);
   const [koisList, setKoisList] = useState<Koi[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [searchValue, setSearchValue] = useState(
     params.search?.toString() || ""
@@ -38,7 +50,6 @@ export default function KoiFishAll() {
   const [variety, setVariety] = useState(params.variety?.toString() || "");
   const [gender, setGender] = useState("");
   const [type, setType] = useState("");
-  // const [variety, setVariety] = useState("");
   const [breeder, setBreeder] = useState("");
   const [sortOrder, setSortOrder] = useState("");
   const numColumns = 2;
@@ -46,7 +57,6 @@ export default function KoiFishAll() {
   const [priceSortOrder, setPriceSortOrder] = useState("asc");
 
   useEffect(() => {
-    // Use the search value from URL params if available
     if (params.search) {
       setSearchValue(params.search.toString());
     }
@@ -78,7 +88,7 @@ export default function KoiFishAll() {
     sortOrder = "",
     isSearch = false
   ) => {
-    if (loading || (!hasNextPage && !isSearch)) return;
+    if ((loading && !refreshing) || (!hasNextPage && !isSearch)) return;
     setLoading(true);
     try {
       const response = await GlobalApi.getKoisList(
@@ -93,12 +103,14 @@ export default function KoiFishAll() {
       );
       if (response?.data?.length > 0) {
         setKoisList((prevList) =>
-          isSearch ? response.data : [...prevList, ...response.data]
+          isSearch || refreshing
+            ? response.data
+            : [...prevList, ...response.data]
         );
         setPage(pageNumber);
         setHasNextPage(response.hasNext);
       } else {
-        if (isSearch) setKoisList([]);
+        if (isSearch || refreshing) setKoisList([]);
         setHasNextPage(false);
       }
     } catch (error: any) {
@@ -106,7 +118,79 @@ export default function KoiFishAll() {
       alert("Lỗi API: " + error.message);
     }
     setLoading(false);
+    setRefreshing(false);
   };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setPage(1);
+    fetchKoisList(
+      1,
+      searchValue,
+      gender,
+      type,
+      variety,
+      breeder,
+      sortOrder,
+      true
+    );
+  }, [searchValue, gender, type, variety, breeder, sortOrder]);
+
+  const fetchCart = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem("userData");
+      if (!token) {
+        setIsLoggedIn(false);
+        return;
+      }
+
+      setIsLoggedIn(true);
+      const parsedToken = JSON.parse(token);
+      const jwtToken = parsedToken?.accessToken;
+
+      const response = await axios.get(
+        `https://kfsapis.azurewebsites.net/api/Cart/GetCartAndItemsInside`,
+        {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data && response.data.items) {
+        setCart(response.data);
+        setCartItems(response.data.items);
+      }
+    } catch (error) {
+      console.error("Lỗi lấy dữ liệu giỏ hàng:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userData = await AsyncStorage.getItem("userData");
+        if (userData !== null) {
+          const parsedData = JSON.parse(userData);
+          setIsLoggedIn(true);
+        } else {
+          setIsLoggedIn(false);
+        }
+      } catch (error) {
+        console.error("Lỗi lấy dữ liệu:", error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  useEffect(() => {
+    fetchCart();
+  }, []);
 
   return (
     <View className="flex-1">
@@ -123,6 +207,13 @@ export default function KoiFishAll() {
 
         <TouchableOpacity onPress={() => router.push("/Cart")}>
           <AntDesign name="shoppingcart" size={30} color="orange" />
+          {isLoggedIn && cartItems.length > 0 && (
+            <View className="absolute -top-2 -right-2 bg-red-500 rounded-full w-5 h-5 flex items-center justify-center">
+              <Text className="text-white text-xs font-bold">
+                {cart.itemsNumber}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
       <View className="flex-row items-center border-b border-gray-300 px-4 py-2">
@@ -176,6 +267,9 @@ export default function KoiFishAll() {
         keyExtractor={(item) => item.id.toString()}
         data={koisList}
         numColumns={numColumns}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         ListHeaderComponent={
           <SearchComponent
             initialSearchValue={searchValue}
@@ -223,7 +317,7 @@ export default function KoiFishAll() {
         onEndReachedThreshold={0.5}
         showsVerticalScrollIndicator={false}
         ListFooterComponent={
-          loading ? (
+          loading && !refreshing ? (
             <View className="justify-center items-center p-4">
               <ActivityIndicator animating={true} color={MD2Colors.red800} />
             </View>

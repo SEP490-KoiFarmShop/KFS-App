@@ -126,8 +126,12 @@ export default function OrderItem({ item }: any) {
             className="w-20 h-20 rounded-lg"
             resizeMode="contain"
           />
-          <View className="ml-3">
-            <Text className="text-gray-700 font-semibold">
+          <View className="ml-3 flex-1">
+            <Text
+              className="text-gray-700 font-semibold"
+              numberOfLines={2}
+              ellipsizeMode="tail"
+            >
               {item.orderDetails[0].name}
             </Text>
             <Text className="text-gray-500">

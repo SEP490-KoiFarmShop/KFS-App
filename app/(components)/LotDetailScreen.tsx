@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   Image,
   RefreshControl,
+  Modal,
+  Dimensions,
 } from "react-native";
 import React, { useEffect, useState, useCallback } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -93,20 +95,37 @@ export default function LotDetailScreen() {
     null
   );
   const [userId, setUserId] = useState<any | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [timeCalculated, setTimeCalculated] = useState<boolean>(false);
+
+  // State for image zoom modal
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const windowWidth = Dimensions.get("window").width;
+  const windowHeight = Dimensions.get("window").height;
+
+  // Check if auction time has ended
+  const [isAuctionEnded, setIsAuctionEnded] = useState<boolean>(false);
+
+  // State to track if all data is fully loaded
+  const [dataFullyLoaded, setDataFullyLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     const getUserId = async () => {
       try {
         const userData = await AsyncStorage.getItem("userData");
         if (!userData) {
-          router.push("/(auth)/LoginScreen");
+          setIsLoggedIn(false);
           return;
         }
 
         const parsedToken = JSON.parse(userData);
         setUserId(parsedToken?.id);
+        setIsLoggedIn(true);
       } catch (error) {
         console.error("Failed to get user ID:", error);
+        setIsLoggedIn(false);
       }
     };
 
@@ -123,7 +142,6 @@ export default function LotDetailScreen() {
       try {
         const userData = await AsyncStorage.getItem("userData");
         if (!userData) {
-          router.push("/(auth)/LoginScreen");
           return;
         }
 
@@ -182,6 +200,8 @@ export default function LotDetailScreen() {
 
   const fetchLotDetail = async () => {
     setIsLoading(true);
+    setTimeCalculated(false);
+    setDataFullyLoaded(false);
     try {
       const response = await GlobalApi.getLotById(lotId);
       console.log(response.data);
@@ -207,6 +227,7 @@ export default function LotDetailScreen() {
     } finally {
       setIsLoading(false);
       setRefreshing(false);
+      // Note: dataFullyLoaded will be set to true after time calculation is done
     }
   };
 
@@ -219,10 +240,16 @@ export default function LotDetailScreen() {
     fetchLotDetail();
   }, []);
 
+  // Function to handle image press - opens modal with selected image
+  const handleImagePress = (imageUrl: string) => {
+    setSelectedImage(imageUrl);
+    setModalVisible(true);
+  };
+
   useEffect(() => {
     if (!auction?.expectedEndTime) return;
 
-    const interval = setInterval(() => {
+    const calculateTime = () => {
       const now = new Date();
       const endTime = new Date(auction.expectedEndTime);
       endTime.setHours(endTime.getHours() - 7);
@@ -230,23 +257,41 @@ export default function LotDetailScreen() {
 
       if (diff <= 0) {
         setTimeLeft("End time");
-        clearInterval(interval);
+        setIsAuctionEnded(true);
+        setTimeCalculated(true);
+        setDataFullyLoaded(true);
         return;
       }
 
+      setIsAuctionEnded(false);
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
       setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
-    }, 1000);
+      setTimeCalculated(true);
+      setDataFullyLoaded(true);
+    };
+
+    // Calculate time immediately
+    calculateTime();
+
+    const interval = setInterval(calculateTime, 1000);
 
     return () => clearInterval(interval);
   }, [auction?.expectedEndTime]);
 
-  if (isLoading && !refreshing) {
+  // Check if all required data is loaded
+  useEffect(() => {
+    if (!isLoading && koisById && auction && timeCalculated) {
+      setDataFullyLoaded(true);
+    }
+  }, [isLoading, koisById, auction, timeCalculated]);
+
+  if (!dataFullyLoaded || isLoading) {
     return (
       <View className="justify-center items-center flex-1">
-        <ActivityIndicator animating={true} color={MD2Colors.red800} />
+        <ActivityIndicator size="large" color={MD2Colors.red800} />
+        <Text className="mt-4 text-gray-600">Loading auction details...</Text>
       </View>
     );
   }
@@ -278,8 +323,6 @@ export default function LotDetailScreen() {
       }
 
       const parsedToken = JSON.parse(userData);
-      const id = parsedToken?.id;
-
       if (!auction?.isRegistered) {
         router.push(`/(components)/RegisterBid?lotId=${lotId}`);
       } else {
@@ -318,8 +361,44 @@ export default function LotDetailScreen() {
     });
   };
 
+  // Determine if bid button should be shown
+  const shouldShowBidButton = () => {
+    return (
+      isLoggedIn &&
+      !isAuctionEnded &&
+      auction?.isYourConsignedFish === false &&
+      auction?.status === "Auctioning" &&
+      userId !== auction?.currentHisghestBidderAccountId
+    );
+  };
+
   return (
     <View className="flex-1">
+      {/* Image Zoom Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View className="flex-1 bg-black/80 justify-center items-center">
+          <TouchableOpacity
+            className="absolute top-10 right-5 z-10 p-2 bg-black/50 rounded-full"
+            onPress={() => setModalVisible(false)}
+          >
+            <Text className="text-white font-bold text-lg">X</Text>
+          </TouchableOpacity>
+
+          {selectedImage && (
+            <Image
+              source={{ uri: selectedImage }}
+              style={{ width: windowWidth * 0.9, height: windowHeight * 0.7 }}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
+
       <View className="flex-row items-center p-5 bg-white shadow-md">
         <TouchableOpacity
           onPress={() => router.push(`/(tabs)/auction`)}
@@ -344,12 +423,18 @@ export default function LotDetailScreen() {
           >
             {koisById?.imageUrl && koisById.imageUrl.length > 0
               ? koisById.imageUrl.map((url: string, index: number) => (
-                  <Image
+                  <TouchableOpacity
                     key={index}
-                    className="w-[250px] h-[300px] mt-5 mr-5"
-                    source={{ uri: url }}
-                    resizeMode="contain"
-                  />
+                    onPress={() => handleImagePress(url)}
+                    activeOpacity={0.8}
+                    className="mr-5 mt-5"
+                  >
+                    <Image
+                      className="w-[250px] h-[300px]"
+                      source={{ uri: url }}
+                      resizeMode="contain"
+                    />
+                  </TouchableOpacity>
                 ))
               : [require("../../assets/icon/defaultimage.jpg")].map(
                   (img, index: number) => (
@@ -466,18 +551,11 @@ export default function LotDetailScreen() {
             Bidding History
           </Text>
 
-          {auction?.isYourConsignedFish === false && (
+          {shouldShowBidButton() && (
             <View className="flex-row justify-between items-center space-x-2 mb-5">
               <TouchableOpacity
                 onPress={submit}
-                disabled={
-                  isLoading ||
-                  auction?.status !== "Auctioning" ||
-                  userId === auction?.currentHisghestBidderAccountId
-                }
-                className={`bg-orange-500 h-14 rounded-lg shadow-md flex-1 ml-2 justify-center items-center ${
-                  auction?.status !== "Auctioning" ? "opacity-50" : ""
-                }`}
+                className="bg-orange-500 h-14 rounded-lg shadow-md flex-1 ml-2 justify-center items-center"
               >
                 {isLoading ? (
                   <ActivityIndicator size="small" color="#ffffff" />
@@ -485,6 +563,29 @@ export default function LotDetailScreen() {
                   <Text className="text-white font-bold text-lg">Bid</Text>
                 )}
               </TouchableOpacity>
+            </View>
+          )}
+
+          {/* {!isLoggedIn && !isAuctionEnded && ( */}
+          {!isAuctionEnded && !isLoggedIn && (
+            <View className="mb-5 p-3 bg-gray-100 rounded-lg">
+              <Text className="text-gray-600 text-center">
+                Please login to participate in bidding
+              </Text>
+              <TouchableOpacity
+                onPress={() => router.push("/(auth)/LoginScreen")}
+                className="bg-blue-500 h-10 rounded-lg shadow-md justify-center items-center mt-2"
+              >
+                <Text className="text-white font-semibold">Login</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {isAuctionEnded && (
+            <View className="mb-5 p-3 bg-yellow-50 rounded-lg">
+              <Text className="text-orange-600 text-center font-semibold">
+                This auction has ended
+              </Text>
             </View>
           )}
 
@@ -584,12 +685,18 @@ export default function LotDetailScreen() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {koisById.certificateImageUrl.map(
                   (url: string, index: number) => (
-                    <Image
+                    <TouchableOpacity
                       key={index}
-                      className="w-[250px] h-[300px] mr-5"
-                      source={{ uri: url }}
-                      resizeMode="contain"
-                    />
+                      className="mr-3"
+                      onPress={() => handleImagePress(url)}
+                      activeOpacity={0.8}
+                    >
+                      <Image
+                        className="w-[250px] h-[300px] rounded-md"
+                        source={{ uri: url }}
+                        resizeMode="contain"
+                      />
+                    </TouchableOpacity>
                   )
                 )}
               </ScrollView>

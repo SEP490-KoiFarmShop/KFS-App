@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   FontAwesome,
   MaterialIcons,
@@ -12,6 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Profile() {
   const router = useRouter();
+  const [userData, setUserData] = useState<any>(null);
 
   const logout = () => {
     Alert.alert("Confirm Logout", "Are you sure you want to logout?", [
@@ -29,6 +30,26 @@ export default function Profile() {
       },
     ]);
   };
+
+  useEffect(() => {
+    const fetchUserData = async (): Promise<void> => {
+      try {
+        const userData = await AsyncStorage.getItem("userData");
+        if (userData !== null) {
+          const parsedData = JSON.parse(userData);
+          // console.log(parsedData);
+          setUserData(parsedData);
+        }
+        // else {
+        //   router.push("/(auth)/LoginScreen");
+        // }
+      } catch (error) {
+        console.error("Lỗi lấy dữ liệu:", error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   return (
     <ScrollView className="bg-gray-100">
@@ -105,13 +126,6 @@ export default function Profile() {
           <Text className="font-semibold"> Auction Invoice</Text>
         </View>
         <View className="flex-row justify-around mt-3">
-          {/* <TouchableOpacity
-            onPress={() =>
-              router.push("/invoice/InvoiceHome?orderStatus=Pending")
-            }
-          >
-            <IconLabel icon="timer" label="Pending" library="MaterialIcons" />
-          </TouchableOpacity> */}
           <TouchableOpacity
             onPress={() =>
               router.push("/invoice/InvoiceHome?orderStatus=Pending%20Payment")
@@ -160,25 +174,35 @@ export default function Profile() {
               library="Feather"
             />
           </TouchableOpacity>
-          {/* <IconLabel icon="gift" label="Shopee Xu" />
-          <IconLabel
-            icon="local-offer"
-            label="Kho Voucher"
-            library="MaterialIcons"
-          /> */}
         </View>
       </View>
 
       <View className="bg-white p-4 mt-2">
-        <TouchableOpacity className="flex-row py-2" onPress={logout}>
-          <AntDesign
-            name="poweroff"
-            size={24}
-            color="red"
-            className="ml-3 mr-3"
-          />
-          <Text className="text-red-600 font-bold ml-3">Log out</Text>
-        </TouchableOpacity>
+        {!userData && (
+          <TouchableOpacity
+            className="flex-row py-2"
+            onPress={() => router.push("(auth)/LoginScreen")}
+          >
+            <AntDesign
+              name="login"
+              size={24}
+              color="blue"
+              className="ml-3 mr-3"
+            />
+            <Text className="text-blue-600 font-bold ml-3">Log in</Text>
+          </TouchableOpacity>
+        )}
+        {userData && (
+          <TouchableOpacity className="flex-row py-2" onPress={logout}>
+            <AntDesign
+              name="poweroff"
+              size={24}
+              color="red"
+              className="ml-3 mr-3"
+            />
+            <Text className="text-red-600 font-bold ml-3">Log out</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </ScrollView>
   );

@@ -1,13 +1,59 @@
 import { useEffect, useState } from "react";
-import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  Image,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import axios from "axios";
 
 const Header = () => {
   const [fullName, setFullName] = useState("");
   const [searchValue, setSearchValue] = useState("");
+  const [cartItems, setCartItems] = useState<any>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [cart, setCart] = useState<any>([]);
   const router = useRouter();
+
+  const fetchCart = async () => {
+    try {
+      setIsLoading(true);
+      const token = await AsyncStorage.getItem("userData");
+      if (!token) {
+        setIsLoggedIn(false);
+        return;
+      }
+
+      setIsLoggedIn(true);
+      const parsedToken = JSON.parse(token);
+      const jwtToken = parsedToken?.accessToken;
+
+      const response = await axios.get(
+        `https://kfsapis.azurewebsites.net/api/Cart/GetCartAndItemsInside`,
+        {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data && response.data.items) {
+        setCart(response.data);
+        setCartItems(response.data.items);
+      }
+    } catch (error) {
+      console.error("Lỗi lấy dữ liệu giỏ hàng:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -16,6 +62,9 @@ const Header = () => {
         if (userData !== null) {
           const parsedData = JSON.parse(userData);
           setFullName(parsedData.fullName);
+          setIsLoggedIn(true);
+        } else {
+          setIsLoggedIn(false);
         }
       } catch (error) {
         console.error("Lỗi lấy dữ liệu:", error);
@@ -25,12 +74,15 @@ const Header = () => {
     fetchUserData();
   }, []);
 
+  useEffect(() => {
+    fetchCart();
+  }, []);
+
   const goToCart = () => {
     router.push("/Cart");
   };
 
   const goToSearch = () => {
-    // Navigate to KoiFishAll and pass search value if it exists
     router.push(`/KoiFishAll${searchValue ? `?search=${searchValue}` : ""}`);
   };
 
@@ -49,8 +101,15 @@ const Header = () => {
             </Text>
           </View>
         </View>
-        <TouchableOpacity onPress={goToCart}>
+        <TouchableOpacity onPress={goToCart} className="relative">
           <AntDesign name="shoppingcart" size={30} color="white" />
+          {isLoggedIn && cartItems.length > 0 && (
+            <View className="absolute -top-2 -right-2 bg-red-500 rounded-full w-5 h-5 flex items-center justify-center">
+              <Text className="text-white text-xs font-bold">
+                {cart.itemsNumber}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 

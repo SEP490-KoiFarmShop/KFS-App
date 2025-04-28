@@ -20,8 +20,8 @@ const Silder = () => {
           }))
         );
         setSliders(imageList);
-      } catch (error) {
-        console.error("Error fetching sliders:", error);
+      } catch (error: any) {
+        console.error("Error fetching sliders:", error.response.data.Message);
       }
     };
 

@@ -46,7 +46,7 @@ export default function AddOrderInfor(): React.ReactElement {
     address?: string;
   }>();
 
-  console.log(params);
+  // console.log(params);
 
   const router = useRouter();
   const orderId = params.orderId;

@@ -404,17 +404,18 @@ const ConsignmentDetail: React.FC = () => {
           </Text>
         )}
       </View>
-
-      <View className="mx-5 mt-4 bg-white p-4 rounded-lg shadow-sm">
-        <TouchableOpacity
-          className=""
-          onPress={() => router.push("consignment/ViewDetailContract")}
-        >
-          <Text className="text-blue-600 font-semibold text-lg text-center">
-            View Contract Details
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {consignmentData.status !== "Approved" && (
+        <View className="mx-5 mt-4 bg-white p-4 rounded-lg shadow-sm">
+          <TouchableOpacity
+            className=""
+            onPress={() => router.push("consignment/ViewDetailContract")}
+          >
+            <Text className="text-blue-600 font-semibold text-lg text-center">
+              View Contract Details
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </>
   );
 

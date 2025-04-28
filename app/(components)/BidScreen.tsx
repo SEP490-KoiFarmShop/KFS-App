@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { ActivityIndicator, TextInput } from "react-native-paper";
-import * as SignalR from "@microsoft/signalr";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -153,19 +152,6 @@ export default function BidScreen() {
     }).format(amount);
   };
 
-  // const handleBidInput = (text: string) => {
-  //   const numericValue = text.replace(/\D/g, "");
-
-  //   if (numericValue === "") {
-  //     setBidAmount("");
-  //     return;
-  //   }
-
-  //   const parsedValue = parseInt(numericValue, 10);
-  //   const formattedValue = new Intl.NumberFormat("vi-VN").format(parsedValue);
-  //   setBidAmount(formattedValue);
-  // };
-
   const placeBid = async () => {
     // Get the minimum bid amount
     const minBidAmount = getMinBidAmount();
@@ -231,19 +217,86 @@ export default function BidScreen() {
     }
   };
 
-  // Allow users to enter their own bid or use the minimum
-  const handleCustomBid = (text: string) => {
-    // Remove non-numeric characters
-    const numericValue = text.replace(/\D/g, "");
+  const handleBuyNow = async () => {
+    try {
+      const userData = await AsyncStorage.getItem("userData");
+      if (!userData) {
+        router.push("/(auth)/LoginScreen");
+        return;
+      }
 
-    if (numericValue === "") {
-      setBidAmount("");
-      return;
+      const parsedToken = JSON.parse(userData);
+      const jwtToken = parsedToken?.accessToken;
+
+      Alert.alert(
+        "Buy Now",
+        `Are you sure you want to buy this item now for ${formatCurrency(
+          lotData?.buyNowPrice
+        )}?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Buy Now",
+            onPress: async () => {
+              try {
+                const response = await axios.post(
+                  "https://kfsapis.azurewebsites.net/api/v1/auctions/lot/bid",
+                  {
+                    lotId: lotId,
+                    amount: lotData?.buyNowPrice,
+                  },
+                  {
+                    headers: {
+                      Authorization: `Bearer ${jwtToken}`,
+                      "Content-Type": "application/json",
+                    },
+                  }
+                );
+
+                Alert.alert(
+                  "Success",
+                  "Congratulations! You have successfully purchased this item.",
+                  [
+                    {
+                      text: "OK",
+                      onPress: () =>
+                        router.push(
+                          `/(components)/LotDetailScreen?lotId=${lotId}`
+                        ),
+                    },
+                  ]
+                );
+              } catch (error) {
+                console.error("Error buying now:", error);
+                Alert.alert(
+                  "Error",
+                  "Failed to complete purchase. Please try again."
+                );
+              }
+            },
+          },
+        ]
+      );
+    } catch (error: any) {
+      console.error("Error in buy now process:", error.response?.data.Message);
+      Alert.alert("Error", "Failed to process your request. Please try again.");
     }
+  };
 
-    const parsedValue = parseInt(numericValue, 10);
-    const formattedValue = new Intl.NumberFormat("vi-VN").format(parsedValue);
-    setBidAmount(formattedValue);
+  const handleCustomBid = (text: string) => {
+    setBidAmount(text === "" ? "" : text);
+
+    if (text !== "") {
+      const numericValue = text.replace(/\D/g, "");
+
+      if (numericValue !== "") {
+        const parsedValue = parseInt(numericValue, 10);
+        const formattedValue = new Intl.NumberFormat("vi-VN").format(
+          parsedValue
+        );
+        setBidAmount(formattedValue);
+      }
+    }
   };
 
   return (
@@ -322,7 +375,7 @@ export default function BidScreen() {
             <Text className="text-sm text-gray-600">
               Starting bid: {formatCurrency(lotData?.startingPrice)}
             </Text>
-            <Text className="text-sm text-gray-600">
+            <Text className="text-sm text-gray-600 font-bold">
               Buy now price: {formatCurrency(lotData?.buyNowPrice)}
             </Text>
           </View>
@@ -368,24 +421,31 @@ export default function BidScreen() {
             </Text>
 
             <TextInput
-              value={bidAmount || formatCurrency(getMinBidAmount())}
+              value={bidAmount}
               onChangeText={handleCustomBid}
               keyboardType="numeric"
               mode="outlined"
               outlineColor="#FF6600"
               activeOutlineColor="#FF6600"
               style={{ backgroundColor: "white", marginBottom: 10 }}
-              placeholder={`Enter bid amount (min: ${formatCurrency(
-                getMinBidAmount()
-              )})`}
+              placeholder={`Min bid : ${formatCurrency(getMinBidAmount())}`}
             />
 
-            <TouchableOpacity
-              className="p-4 rounded-lg items-center bg-orange-500"
-              onPress={placeBid}
-            >
-              <Text className="text-white font-bold text-lg">Place Bid</Text>
-            </TouchableOpacity>
+            <View className="flex-row space-x-2">
+              <TouchableOpacity
+                className="flex-1 p-4 rounded-lg items-center bg-orange-500"
+                onPress={placeBid}
+              >
+                <Text className="text-white font-bold text-lg">Place Bid</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="flex-1 p-4 rounded-lg items-center bg-green-600 ml-2"
+                onPress={handleBuyNow}
+              >
+                <Text className="text-white font-bold text-lg">Buy Now</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </ScrollView>
       </View>

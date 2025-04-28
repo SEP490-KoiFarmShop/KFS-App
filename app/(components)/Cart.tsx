@@ -26,6 +26,7 @@ export default function Cart() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRemoveLoading, setIsRemoveLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
 
   const fetchCart = async () => {
     try {
@@ -79,6 +80,38 @@ export default function Cart() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const fetchUserDetail = async () => {
+      try {
+        const userData = await AsyncStorage.getItem("userData");
+        if (!userData) {
+          // router.push("/(auth)/LoginScreen");
+          return;
+        }
+
+        const parsedToken = JSON.parse(userData);
+        const jwtToken = parsedToken?.accessToken;
+
+        const response = await axios.get(
+          `https://kfsapis.azurewebsites.net/api/v1/auth/GetCustomerDetail`,
+          {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (response.data) {
+          setUserData(response.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch user information:", err);
+      }
+    };
+
+    fetchUserDetail();
+  }, []);
 
   useEffect(() => {
     fetchCart();
@@ -302,10 +335,10 @@ export default function Cart() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                colors={["#FF6B00"]} // Android
-                tintColor="#FF6B00" // iOS
-                title="Refreshing cart..." // iOS
-                titleColor="#FF6B00" // iOS
+                colors={["#FF6B00"]}
+                tintColor="#FF6B00"
+                title="Refreshing cart..."
+                titleColor="#FF6B00"
               />
             }
           >
@@ -378,20 +411,9 @@ export default function Cart() {
               </Text>
               <TouchableOpacity className="bg-orange-100 px-3 py-1 rounded-md">
                 <Text className="text-yellow-600 text-sm font-medium">
-                  Gold
+                  {userData?.membershipRank}
                 </Text>
               </TouchableOpacity>
-            </View>
-
-            {/* Use Membership */}
-            <View className="flex-row items-center justify-between mb-3">
-              <View className="flex-row items-center">
-                <Entypo name="wallet" size={20} color="#FFA500" />
-                <Text className="ml-2 text-gray-700 font-medium">
-                  5% discount by membership
-                </Text>
-              </View>
-              <Checkbox status="checked" color="#FF6B00" />
             </View>
 
             {/* Select All & Total Price Section */}

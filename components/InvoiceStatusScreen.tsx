@@ -131,11 +131,12 @@ export default function InvoiceStatusScreen({ status }: any) {
             source={{ uri: item.imageUrl }}
             className="w-24 h-24 rounded-lg"
           />
-          {status === "Paid" && (
-            <View className="bg-green-400 py-1 px-4 rounded-md mt-2 items-center">
-              <Text className="text-white font-bold">You Win !!!</Text>
-            </View>
-          )}
+          {status === "Paid" ||
+            (status === "PendingPayment" && (
+              <View className="bg-green-400 py-1 px-4 rounded-md mt-2 items-center">
+                <Text className="text-white font-bold">You Win !!!</Text>
+              </View>
+            ))}
         </View>
         <View className="ml-4 flex-1 justify-center">
           <Text className="text-2xl font-bold">{item.name}</Text>

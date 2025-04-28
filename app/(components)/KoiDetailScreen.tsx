@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   Dimensions,
+  Modal,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -41,6 +42,13 @@ export default function KoiDetailScreen() {
   const [koisById, setKoisById] = useState<Koi | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // State for image zoom modal
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const windowWidth = Dimensions.get("window").width;
+  const windowHeight = Dimensions.get("window").height;
 
   const submit = async () => {
     try {
@@ -146,6 +154,12 @@ export default function KoiDetailScreen() {
     fetchKoiDetail();
   }, [id]);
 
+  // Function to handle image press - opens modal with selected image
+  const handleImagePress = (imageUrl: string) => {
+    setSelectedImage(imageUrl);
+    setModalVisible(true);
+  };
+
   if (isLoading) {
     return (
       <View className="justify-center items-center flex-1">
@@ -178,19 +192,37 @@ export default function KoiDetailScreen() {
     });
   };
 
-  console.log("koisById?.isYourConsignedFish: ", koisById?.isYourConsignedFish);
-
-  console.log(
-    "koisById.isConsignedByAccountId: ",
-    koisById?.isConsignedByAccountId
-  );
-
-  console.log("currentUserId: ", currentUserId);
-
-  console.log("test:", koisById.isConsignedByAccountId === currentUserId);
-
   return (
     <View className="flex-1">
+      {/* Image Zoom Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View className="flex-1 bg-black/80 justify-center items-center">
+          <TouchableOpacity
+            className="absolute top-10 right-5 z-10 p-2 bg-black/50 rounded-full"
+            onPress={() => setModalVisible(false)}
+          >
+            <Text className="text-white font-bold text-lg">X</Text>
+          </TouchableOpacity>
+
+          {selectedImage && (
+            <Image
+              source={
+                typeof selectedImage === "string"
+                  ? { uri: selectedImage }
+                  : selectedImage
+              }
+              style={{ width: windowWidth * 0.9, height: windowHeight * 0.7 }}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
+
       <ScrollView
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
@@ -205,14 +237,29 @@ export default function KoiDetailScreen() {
               ? koisById.image
               : [{ url: require("../../assets/icon/defaultimage.jpg") }]
             ).map((img, index) => (
-              <Image
+              <TouchableOpacity
                 key={index}
-                className="w-[250px] h-[300px] mt-5 mr-5"
-                source={
-                  typeof img.url === "string" ? { uri: img.url } : img.url
+                onPress={() =>
+                  handleImagePress(
+                    typeof img.url === "string"
+                      ? img.url
+                      : require("../../assets/icon/defaultimage.jpg")
+                  )
                 }
-                resizeMode="contain"
-              />
+                activeOpacity={0.8}
+                className="mr-5 mt-5"
+              >
+                <Image
+                  className="w-[250px] h-[300px]"
+                  source={
+                    typeof img.url === "string" ? { uri: img.url } : img.url
+                  }
+                  resizeMode="contain"
+                />
+                {/* <View className="absolute bottom-0 right-0 bg-black/30 px-2 py-1 rounded-tl-md">
+                  <Text className="text-white text-xs">Zoom in</Text>
+                </View> */}
+              </TouchableOpacity>
             ))}
           </ScrollView>
         </View>
@@ -258,10 +305,6 @@ export default function KoiDetailScreen() {
                 <Text className="text-gray-700 text-lg">
                   🆔 Consigned By: {koisById.isConsignedBy}
                 </Text>
-                {/* <Text className="text-gray-700 text-lg">
-                  👤 Your Consigned Fish:{" "}
-                  {koisById.isYourConsignedFish ? "Yes" : "No"}
-                </Text> */}
               </View>
             )}
           </View>
@@ -285,13 +328,23 @@ export default function KoiDetailScreen() {
                 </Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   {koisById.certificateImage.map((cert, index) => (
-                    <View key={index} className="mr-3">
+                    <TouchableOpacity
+                      key={index}
+                      className="mr-3"
+                      onPress={() => handleImagePress(cert.url)}
+                      activeOpacity={0.8}
+                    >
                       <Image
                         className="w-[200px] h-[250px] rounded-md"
                         source={{ uri: cert.url }}
                         resizeMode="contain"
                       />
-                    </View>
+                      {/* <View className="absolute bottom-0 right-0 bg-black/30 px-2 py-1 rounded-tl-md">
+                        <Text className="text-white text-xs">
+                          Nhấn để phóng to
+                        </Text>
+                      </View> */}
+                    </TouchableOpacity>
                   ))}
                 </ScrollView>
               </View>

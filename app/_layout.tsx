@@ -6,25 +6,6 @@ import { useEffect } from "react";
 
 export default function App() {
   const router = useRouter();
-  // useEffect(() => {
-  //   const checkUser = async () => {
-  //     const userData = await AsyncStorage.getItem("userData");
-  //     if (!userData) {
-  //       router.push("/(auth)/LoginScreen");
-  //       return;
-  //     }
-
-  //     const parsedToken = JSON.parse(userData);
-  //     const role = parsedToken?.role;
-
-  //     if (role === "SHIPPER") {
-  //       router.push("/(delivery)/DeliveryList");
-  //       return;
-  //     }
-  //   };
-
-  //   checkUser();
-  // }, []);
 
   return (
     <Stack>

@@ -176,9 +176,9 @@ export default function OrderDetail() {
       const jwtToken = parsedToken?.accessToken;
 
       const orderPayload = {
-        fullName: fullName || "N/A",
-        contactPhoneNumber: contactPhoneNumber || "N/A",
-        address: address || "N/A",
+        fullName: fullName || customer.fullName,
+        contactPhoneNumber: contactPhoneNumber || customer.phoneNumber,
+        address: address || customer.address,
         koiFishIds: orderData.items.map((item: any) => item.id),
         paymentMethodId: selectedPaymentMethod,
         totalAmount: orderData.paymentDetails["Total Amount"],
@@ -186,6 +186,8 @@ export default function OrderDetail() {
         membershipDiscount: orderData.paymentDetails["Membership Discount"],
         finalAmount: orderData.paymentDetails["Final Amount"],
       };
+
+      console.log(orderPayload);
 
       const response = await axios.post(
         "https://kfsapis.azurewebsites.net/api/v1/orders/",
