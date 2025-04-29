@@ -109,9 +109,12 @@ export default function RegisterBid() {
       );
       alert("Registration successful!");
       router.push(`/(components)/BidScreen?lotId=${lotId}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error registering bid:", error);
-      alert("Registration failed. Please try again.");
+      alert(
+        error.response.data.Message ||
+          "An error occurred while registering the bid."
+      );
     }
   };
 

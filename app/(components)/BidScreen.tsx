@@ -83,8 +83,8 @@ export default function BidScreen() {
   const [koisById, setKoisById] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [bidAmount, setBidAmount] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Calculate bid amounts only when lotData is available
   const getInitialBidAmount = () => {
     if (!lotData) return 0;
     return lotData.currentHighestBid !== null
@@ -94,8 +94,6 @@ export default function BidScreen() {
 
   const getMinBidAmount = () => {
     if (!lotData) return 0;
-    // If there's no current highest bid, the min bid is the starting price
-    // Otherwise, it's the highest bid plus the step
     return lotData.currentHighestBid !== null
       ? lotData.currentHighestBid + lotData.priceStep
       : lotData.startingPrice;
@@ -153,6 +151,11 @@ export default function BidScreen() {
   };
 
   const placeBid = async () => {
+    // Prevent multiple submissions
+    if (isSubmitting) {
+      return;
+    }
+
     // Get the minimum bid amount
     const minBidAmount = getMinBidAmount();
 
@@ -168,9 +171,24 @@ export default function BidScreen() {
       return;
     }
 
+    // Check if bid exceeds buy now price and adjust it
+    let finalBidAmount = numericBidAmount;
+    if (lotData?.buyNowPrice && numericBidAmount > lotData.buyNowPrice) {
+      finalBidAmount = lotData.buyNowPrice;
+      Alert.alert(
+        "Information",
+        `Your bid exceeds the Buy Now price. Your bid has been adjusted to the Buy Now price: ${formatCurrency(
+          lotData.buyNowPrice
+        )}.`
+      );
+    }
+
+    setIsSubmitting(true); // Set submitting state to true
+
     try {
       const userData = await AsyncStorage.getItem("userData");
       if (!userData) {
+        setIsSubmitting(false); // Reset submitting state
         router.push("/(auth)/LoginScreen");
         return;
       }
@@ -180,14 +198,14 @@ export default function BidScreen() {
 
       console.log("Sending request with data:", {
         lotId: lotId,
-        amount: numericBidAmount,
+        amount: finalBidAmount,
       });
 
       const response = await axios.post(
         "https://kfsapis.azurewebsites.net/api/v1/auctions/lot/bid",
         {
           lotId: lotId,
-          amount: numericBidAmount,
+          amount: finalBidAmount,
         },
         {
           headers: {
@@ -197,14 +215,22 @@ export default function BidScreen() {
         }
       );
 
-      Alert.alert("Success", "Your bid has been placed successfully!");
+      // Determine if this was a "Buy Now" scenario
+      const isBuyNow = finalBidAmount === lotData?.buyNowPrice;
+
+      Alert.alert(
+        "Success",
+        isBuyNow
+          ? "Congratulations! You have successfully purchased this item."
+          : "Your bid has been placed successfully!"
+      );
 
       // Update the local state with the new bid
       setLotData((prevData) => {
         if (!prevData) return null;
         return {
           ...prevData,
-          currentHighestBid: numericBidAmount,
+          currentHighestBid: finalBidAmount,
           currentHighestBidderId: parsedToken?.id,
           youAreCurrentHisghestBidder: true,
         };
@@ -214,10 +240,16 @@ export default function BidScreen() {
     } catch (error) {
       console.error("Error placing bid:", error);
       Alert.alert("Error", "Failed to place bid. Please try again.");
+    } finally {
+      setIsSubmitting(false); // Reset submitting state regardless of outcome
     }
   };
 
   const handleBuyNow = async () => {
+    if (isSubmitting) {
+      return; // Prevent action if already submitting
+    }
+
     try {
       const userData = await AsyncStorage.getItem("userData");
       if (!userData) {
@@ -239,6 +271,8 @@ export default function BidScreen() {
             text: "Buy Now",
             onPress: async () => {
               try {
+                setIsSubmitting(true); // Set submitting state to true
+
                 const response = await axios.post(
                   "https://kfsapis.azurewebsites.net/api/v1/auctions/lot/bid",
                   {
@@ -272,6 +306,8 @@ export default function BidScreen() {
                   "Error",
                   "Failed to complete purchase. Please try again."
                 );
+              } finally {
+                setIsSubmitting(false); // Reset submitting state
               }
             },
           },
@@ -429,22 +465,47 @@ export default function BidScreen() {
               activeOutlineColor="#FF6600"
               style={{ backgroundColor: "white", marginBottom: 10 }}
               placeholder={`Min bid : ${formatCurrency(getMinBidAmount())}`}
+              disabled={isSubmitting} // Disable input while submitting
             />
 
             <View className="flex-row space-x-2">
               <TouchableOpacity
-                className="flex-1 p-4 rounded-lg items-center bg-orange-500"
+                className={`flex-1 p-4 rounded-lg items-center ${
+                  isSubmitting ? "bg-gray-400" : "bg-orange-500"
+                }`}
                 onPress={placeBid}
+                disabled={isSubmitting} // Disable button while submitting
               >
-                <Text className="text-white font-bold text-lg">Place Bid</Text>
+                {isSubmitting ? (
+                  <View className="flex-row items-center">
+                    <ActivityIndicator size="small" color="white" />
+                    <Text className="text-white font-bold text-lg ml-2">
+                      Processing...
+                    </Text>
+                  </View>
+                ) : (
+                  <Text className="text-white font-bold text-lg">
+                    Place Bid
+                  </Text>
+                )}
               </TouchableOpacity>
 
-              <TouchableOpacity
-                className="flex-1 p-4 rounded-lg items-center bg-green-600 ml-2"
+              {/* <TouchableOpacity
+                className={`flex-1 p-4 rounded-lg items-center ml-2 ${
+                  isSubmitting ? "bg-gray-400" : "bg-green-600"
+                }`}
                 onPress={handleBuyNow}
+                disabled={isSubmitting} // Disable button while submitting
               >
-                <Text className="text-white font-bold text-lg">Buy Now</Text>
-              </TouchableOpacity>
+                {isSubmitting ? (
+                  <View className="flex-row items-center">
+                    <ActivityIndicator size="small" color="white" />
+                    <Text className="text-white font-bold text-lg ml-2">Processing...</Text>
+                  </View>
+                ) : (
+                  <Text className="text-white font-bold text-lg">Buy Now</Text>
+                )}
+              </TouchableOpacity> */}
             </View>
           </View>
         </ScrollView>

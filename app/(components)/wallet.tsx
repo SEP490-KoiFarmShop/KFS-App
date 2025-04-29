@@ -246,7 +246,6 @@ export default function Wallet() {
         }
       );
 
-      // Handle success
       Alert.alert(
         "Success",
         "Your withdrawal request has been submitted successfully. It will be processed shortly.",

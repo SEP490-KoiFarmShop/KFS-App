@@ -256,7 +256,7 @@ export default function LotDetailScreen() {
       const diff = endTime.getTime() - now.getTime();
 
       if (diff <= 0) {
-        setTimeLeft("End time");
+        setTimeLeft("Time out");
         setIsAuctionEnded(true);
         setTimeCalculated(true);
         setDataFullyLoaded(true);
@@ -272,7 +272,6 @@ export default function LotDetailScreen() {
       setDataFullyLoaded(true);
     };
 
-    // Calculate time immediately
     calculateTime();
 
     const interval = setInterval(calculateTime, 1000);
@@ -280,7 +279,6 @@ export default function LotDetailScreen() {
     return () => clearInterval(interval);
   }, [auction?.expectedEndTime]);
 
-  // Check if all required data is loaded
   useEffect(() => {
     if (!isLoading && koisById && auction && timeCalculated) {
       setDataFullyLoaded(true);
@@ -370,6 +368,11 @@ export default function LotDetailScreen() {
       auction?.status === "Auctioning" &&
       userId !== auction?.currentHisghestBidderAccountId
     );
+  };
+
+  // Check if time left should be displayed (only when status is Auctioning)
+  const shouldShowTimeLeft = () => {
+    return auction?.status === "Auctioning";
   };
 
   return (
@@ -534,14 +537,17 @@ export default function LotDetailScreen() {
                   {auction.winnerName}
                 </Text>
               </Text>
-              <View className="m-5 bg-orange-50 p-4 rounded-lg">
-                <Text className="text-gray-700 text-lg">
-                  ⌛ Time left:{" "}
-                  <Text className="font-semibold text-red-500 text-2xl">
-                    {timeLeft}
+
+              {shouldShowTimeLeft() && (
+                <View className="m-5 bg-orange-50 p-4 rounded-lg">
+                  <Text className="text-gray-700 text-lg">
+                    ⌛ Time left:{" "}
+                    <Text className="font-semibold text-red-500 text-2xl">
+                      {timeLeft}
+                    </Text>
                   </Text>
-                </Text>
-              </View>
+                </View>
+              )}
             </View>
           </View>
         )}
@@ -566,7 +572,6 @@ export default function LotDetailScreen() {
             </View>
           )}
 
-          {/* {!isLoggedIn && !isAuctionEnded && ( */}
           {!isAuctionEnded && !isLoggedIn && (
             <View className="mb-5 p-3 bg-gray-100 rounded-lg">
               <Text className="text-gray-600 text-center">

@@ -8,7 +8,6 @@ import {
   TextInput,
   Image,
 } from "react-native";
-import { Checkbox } from "react-native-paper";
 import BrandHeader from "../(components)/consignment/BrandHeader";
 import ConsignmentTermsModal from "../(components)/consignment/ConsignmentTermsModal";
 import { router, useRouter } from "expo-router";
@@ -178,9 +177,42 @@ const consignment = () => {
   const [loadingBreeders, setLoadingBreeders] = useState(true);
   const [loadingVarieties, setLoadingVarieties] = useState(true);
 
+  // Add this validation function before the handleSubmit function
+  const validateForm = () => {
+    // Create an array to hold all validation errors
+    let errors = [];
+
+    // Check all required fields
+    if (!selectedVariety) errors.push("Please select a variety");
+    if (!isDateSelected) errors.push("Please select date of birth");
+    if (!gender) errors.push("Please select a gender");
+    if (!selectedBreeder) errors.push("Please select a breeder");
+    if (!consignment) errors.push("Please select method of consignment");
+    if (!selling) errors.push("Please select method of selling");
+    if (
+      !desiredPrice ||
+      isNaN(parseFloat(desiredPrice)) ||
+      parseFloat(desiredPrice) <= 0
+    )
+      errors.push("Please enter a valid desired price");
+    if (!isFromDateSelected) errors.push("Please select from date");
+    if (!isToDateSelected) errors.push("Please select to date");
+    if (koiImages.length === 0)
+      errors.push("Please upload at least one koi image");
+
+    // If there are errors, alert the user and return false
+    if (errors.length > 0) {
+      alert(`Please fill in all required fields:\n${errors.join("\n")}`);
+      return false;
+    }
+
+    return true;
+  };
+
+  // Then modify the handleSubmit function to use this validation
   const handleSubmit = async () => {
-    if (!isDateSelected || !isFromDateSelected || !isToDateSelected) {
-      alert("Please select all required dates");
+    // First validate the form
+    if (!validateForm()) {
       return;
     }
 

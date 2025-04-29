@@ -85,35 +85,29 @@ export default function EditProfile() {
   const [jwtToken, setJwtToken] = useState<string>("");
   const [imageUploading, setImageUploading] = useState<boolean>(false);
 
-  // Form state
   const [fullName, setFullName] = useState<string>("");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [streetAddress, setStreetAddress] = useState<string>("");
   const [image, setImage] = useState<string | null>(null);
 
-  // Bank account state
   const [bankAccountNumber, setBankAccountNumber] = useState<string>("");
   const [bankAccountName, setBankAccountName] = useState<string>("");
   const [bankName, setBankName] = useState<string>("");
   const [bankList, setBankList] = useState<Bank[]>([]);
   const [loadingBanks, setLoadingBanks] = useState<boolean>(true);
 
-  // Location data
   const [locations, setLocations] = useState<LocationData[]>([]);
   const [selectedCity, setSelectedCity] = useState<string>("");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
   const [selectedWard, setSelectedWard] = useState<string>("");
 
-  // Temporary location names for auto-filling
   const [tempWardName, setTempWardName] = useState<string>("");
   const [tempDistrictName, setTempDistrictName] = useState<string>("");
   const [tempCityName, setTempCityName] = useState<string>("");
 
-  // Derived data
   const [districts, setDistricts] = useState<District[]>([]);
   const [wards, setWards] = useState<Ward[]>([]);
 
-  // Form validation
   const [errors, setErrors] = useState({
     fullName: "",
     phoneNumber: "",
@@ -146,12 +140,10 @@ export default function EditProfile() {
             },
           }
         );
-        console.log(response.data);
         setCustomer(response.data);
         setFullName(response.data.fullName);
         setPhoneNumber(response.data.phoneNumber);
 
-        // Parse address if it exists
         if (response.data.address) {
           parseAddress(response.data.address);
         }
@@ -160,7 +152,6 @@ export default function EditProfile() {
           setImage(response.data.image);
         }
 
-        // Set bank account information if it exists
         if (response.data.bankAccountNumber) {
           setBankAccountNumber(response.data.bankAccountNumber);
         }
@@ -170,8 +161,8 @@ export default function EditProfile() {
         if (response.data.bankName) {
           setBankName(response.data.bankName);
         }
-      } catch (error) {
-        console.error("Error fetching user:", error);
+      } catch (error: any) {
+        console.error("Error fetching user:", error.response.data.Message);
         Alert.alert("Lỗi", "Không thể tải thông tin người dùng");
       } finally {
         setLoading(false);
@@ -205,7 +196,6 @@ export default function EditProfile() {
       );
       setLocations(response.data);
 
-      // Tìm và chọn sẵn TP HCM
       const hcmCity = response.data.find((city: any) =>
         city.Name.includes("Hồ Chí Minh")
       );
@@ -219,17 +209,14 @@ export default function EditProfile() {
     }
   };
 
-  // Parse the address string to extract components
   const parseAddress = (address: string) => {
     try {
-      // Example address: "123 Phan Chu Trinh, phường Phường Tân Thành, quận Quận Tân Phú, Thành phố Hồ Chí Minh"
       const parts = address.split(",").map((part) => part.trim());
 
       if (parts.length >= 1) {
         setStreetAddress(parts[0]);
       }
 
-      // Extract ward name (format: "phường Phường Tân Thành")
       const wardPart = parts.find((part) =>
         part.toLowerCase().includes("phường")
       );
@@ -238,7 +225,6 @@ export default function EditProfile() {
         setTempWardName(wardName);
       }
 
-      // Extract district name (format: "quận Quận Tân Phú")
       const districtPart = parts.find((part) =>
         part.toLowerCase().includes("quận")
       );
@@ -247,7 +233,6 @@ export default function EditProfile() {
         setTempDistrictName(districtName);
       }
 
-      // Check for city name (Ho Chi Minh City in this case)
       const cityPart = parts.find((part) =>
         part.toLowerCase().includes("thành phố")
       );
@@ -259,16 +244,13 @@ export default function EditProfile() {
     }
   };
 
-  // Auto-set district and ward based on address data
   useEffect(() => {
     if (locations.length > 0 && (tempDistrictName || tempWardName)) {
-      // Find HCMC in locations data (already selected in fetchLocationData)
       const cityData = locations.find((city) =>
         city.Name.toLowerCase().includes("hồ chí minh")
       );
 
       if (cityData && tempDistrictName) {
-        // Find the district by name
         const district = cityData.Districts.find((dist) =>
           dist.Name.toLowerCase().includes(tempDistrictName.toLowerCase())
         );
@@ -277,7 +259,6 @@ export default function EditProfile() {
           setSelectedDistrict(district.Id);
           setWards(district.Wards);
 
-          // Now find the ward if available
           if (tempWardName) {
             setTimeout(() => {
               const ward = district.Wards.find((w) =>
@@ -287,7 +268,7 @@ export default function EditProfile() {
               if (ward) {
                 setSelectedWard(ward.Id);
               }
-            }, 500); // Small delay to ensure wards are populated
+            }, 500);
           }
         }
       }
@@ -322,7 +303,6 @@ export default function EditProfile() {
     }
   }, [selectedDistrict, districts]);
 
-  // Updated image selection and upload function using FormData
   const pickImage = async () => {
     const { status: permStatus } =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -410,7 +390,6 @@ export default function EditProfile() {
       hasError = true;
     }
 
-    // Validate bank account info only if any of the fields are filled
     if (bankAccountNumber || bankAccountName || bankName) {
       if (!bankAccountNumber.trim()) {
         newErrors.bankAccountNumber = "Vui lòng nhập số tài khoản";
@@ -435,7 +414,6 @@ export default function EditProfile() {
 
     if (hasError) return;
 
-    // Build complete address
     const cityName =
       locations.find((city) => city.Id === selectedCity)?.Name || "";
     const districtName =
@@ -471,7 +449,6 @@ export default function EditProfile() {
 
       Alert.alert("Thành công", "Cập nhật thông tin thành công!");
 
-      // Update local customer data
       if (customer) {
         setCustomer({
           ...customer,
@@ -484,9 +461,9 @@ export default function EditProfile() {
           bankName: bankName,
         });
       }
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      Alert.alert("Lỗi", "Không thể cập nhật thông tin. Vui lòng thử lại sau.");
+    } catch (error: any) {
+      console.error("Error updating profile:", error.response.data.Message);
+      alert(error.response.data.Message);
     } finally {
       setSubmitting(false);
     }

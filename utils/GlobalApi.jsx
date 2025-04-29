@@ -7,7 +7,7 @@ const API_BASE_URL = 'https://kfsapis.azurewebsites.net/api/v1';
 
 const getSlider = async () => {
     try {
-        const response = await axios.get(`https://kfsapis.azurewebsites.net/api/Blog/GetAll`);
+        const response = await axios.get(`https://kfsapis.azurewebsites.net/api/Blog/GetBlogsForCustomer`);
         return response.data;
     } catch (error) {
         console.error('Error fetching kois:', error);
@@ -129,10 +129,10 @@ const getBreeders = async () => {
 
 const getVarieties = async () => {
     try {
-        const response = await axios.get(`${API_BASE_URL}/varieties`);
+        const response = await axios.get(`${API_BASE_URL}/varieties/GetVarietiesForCustomer`);
         return response.data;
     } catch (error) {
-        console.error('Error fetching koi varieties:', error);
+        console.error('Error fetching koi varieties:', error);XMLDocument
         throw error;
     }
 }
