@@ -72,9 +72,22 @@ export default function Cart() {
             0
           )
         );
+
+        // Reset selected items when cart changes
+        // Only pre-select available items
+        const newSelectedItems: { [key: string]: boolean } = {};
+        response.data.items.forEach((item: any) => {
+          if (item.isAvailable) {
+            // Only pre-select items that were previously selected and are available
+            if (selectedItems[item.productId]) {
+              newSelectedItems[item.productId] = true;
+            }
+          }
+        });
+        setSelectedItems(newSelectedItems);
       }
     } catch (error) {
-      console.error("Lỗi lấy dữ liệu giỏ hàng:", error);
+      console.error("Error fetching cart items:", error);
       Alert.alert("Error", "Failed to load cart items. Please try again.");
     } finally {
       setIsLoading(false);
@@ -86,7 +99,6 @@ export default function Cart() {
       try {
         const userData = await AsyncStorage.getItem("userData");
         if (!userData) {
-          // router.push("/(auth)/LoginScreen");
           return;
         }
 
@@ -222,6 +234,20 @@ export default function Cart() {
         return;
       }
 
+      // Check if any selected item is unavailable
+      const unavailableItems = cartItems.filter(
+        (item: any) => selectedItems[item.productId] && !item.isAvailable
+      );
+
+      if (unavailableItems.length > 0) {
+        Alert.alert(
+          "Unavailable Items",
+          "Some selected items are currently unavailable for purchase. Please remove them before checkout.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
+
       setIsLoading(true);
       const token = await AsyncStorage.getItem("userData");
       if (!token) {
@@ -249,7 +275,7 @@ export default function Cart() {
 
       router.push(`/OrderDetail?orderId=${selectedKoiFishIds.join("x")}`);
     } catch (error: any) {
-      console.error("Lỗi khi checkout:", error.response);
+      console.error("Error during checkout:", error.response);
       Alert.alert("Error", "Checkout failed. Please try again.");
     } finally {
       setIsLoading(false);
@@ -257,6 +283,17 @@ export default function Cart() {
   };
 
   const toggleCheckbox = (productId: number) => {
+    // Check if the item is available before allowing selection
+    const item = cartItems.find((item: any) => item.productId === productId);
+
+    if (!item.isAvailable) {
+      Alert.alert(
+        "Item Unavailable",
+        "This item is currently unavailable and cannot be selected for checkout."
+      );
+      return;
+    }
+
     setSelectedItems((prev) => ({
       ...prev,
       [productId]: !prev[productId],
@@ -266,25 +303,41 @@ export default function Cart() {
   const selectAll = () => {
     if (cartItems.length === 0) return;
 
-    // Check if all items are already selected
-    const allSelected = cartItems.every(
+    // Get only available items
+    const availableItems = cartItems.filter((item: any) => item.isAvailable);
+
+    if (availableItems.length === 0) {
+      Alert.alert(
+        "No Available Items",
+        "There are no available items to select."
+      );
+      return;
+    }
+
+    // Check if all available items are already selected
+    const allAvailableSelected = availableItems.every(
       (item: any) => selectedItems[item.productId]
     );
 
     // Create new selection state
     const newSelectedItems: { [key: string]: boolean } = {};
 
-    if (allSelected) {
+    if (allAvailableSelected) {
       // If all were selected, deselect all (empty object)
     } else {
-      // Otherwise select all
-      cartItems.forEach((item: any) => {
+      // Otherwise select all available items
+      availableItems.forEach((item: any) => {
         newSelectedItems[item.productId] = true;
       });
     }
 
     setSelectedItems(newSelectedItems);
   };
+
+  // Calculate available items count
+  const availableItemsCount = cartItems.filter(
+    (item: any) => item.isAvailable
+  ).length;
 
   // Calculate selected items count
   const selectedCount = Object.values(selectedItems).filter(Boolean).length;
@@ -346,7 +399,9 @@ export default function Cart() {
               cartItems.map((item: any, index: any) => (
                 <View
                   key={index}
-                  className="bg-white rounded-lg shadow-md mx-4 p-4 flex-row items-center mt-5"
+                  className={`bg-white rounded-lg shadow-md mx-4 p-4 flex-row items-center mt-5 ${
+                    !item.isAvailable ? "border-2 border-red-300" : ""
+                  }`}
                 >
                   <Checkbox
                     status={
@@ -354,6 +409,7 @@ export default function Cart() {
                     }
                     onPress={() => toggleCheckbox(item.productId)}
                     color="#FF6B00"
+                    disabled={!item.isAvailable}
                   />
                   <Image
                     source={
@@ -361,21 +417,44 @@ export default function Cart() {
                         ? { uri: item.imageUrl }
                         : require("../../assets/icon/defaultimage.jpg")
                     }
-                    className="w-[70px] h-[70px] rounded-lg shadow-md"
+                    className={`w-[70px] h-[70px] rounded-lg shadow-md ${
+                      !item.isAvailable ? "opacity-50" : ""
+                    }`}
                     resizeMode="contain"
                   />
                   <View className="ml-3 flex-1">
-                    <Text className="font-bold text-lg text-gray-800">
-                      {item.name}
-                    </Text>
-                    <Text className="text-gray-600 text-sm">
-                      Số lượng: {item.quantity}
+                    <View className="flex-row items-center">
+                      <Text
+                        className={`font-bold text-lg ${
+                          !item.isAvailable ? "text-gray-500" : "text-gray-800"
+                        }`}
+                      >
+                        {item.name}
+                      </Text>
+                    </View>
+                    <Text
+                      className={`${
+                        !item.isAvailable ? "text-gray-400" : "text-gray-600"
+                      } text-sm`}
+                    >
+                      Quantity: {item.quantity}
                     </Text>
                   </View>
                   <View className="items-end">
-                    <Text className="font-semibold text-lg text-orange-500">
+                    <Text
+                      className={`font-semibold text-lg ${
+                        !item.isAvailable ? "text-gray-400" : "text-orange-500"
+                      }`}
+                    >
                       {item.price.toLocaleString()} VND
                     </Text>
+                    {!item.isAvailable && (
+                      <View className="ml-2 px-2 py-1 bg-red-100 rounded">
+                        <Text className="text-xs text-red-600 font-medium">
+                          Unavailable
+                        </Text>
+                      </View>
+                    )}
                     <TouchableOpacity
                       onPress={() => handleRemoveItem(item.productId)}
                       className="p-2 mt-2"
@@ -416,32 +495,59 @@ export default function Cart() {
               </TouchableOpacity>
             </View>
 
+            {/* Availability info */}
+            {/* {availableItemsCount < cartItems.length && (
+              <View className="bg-yellow-50 p-2 rounded mb-2">
+                <Text className="text-yellow-700 text-xs">
+                  {cartItems.length - availableItemsCount} item(s) in your cart{" "}
+                  {cartItems.length - availableItemsCount > 1 ? "are" : "is"}{" "}
+                  currently unavailable and cannot be checked out.
+                </Text>
+              </View>
+            )} */}
+
             {/* Select All & Total Price Section */}
-            <View className="flex-row items-center justify-between mb-3">
-              <TouchableOpacity
-                onPress={selectAll}
-                className="flex-row items-center"
-              >
-                <Checkbox
-                  status={
-                    cartItems.length > 0 && selectedCount === cartItems.length
-                      ? "checked"
-                      : "unchecked"
-                  }
-                  color="#FF6B00"
-                />
-                <Text className="ml-2 text-gray-700 font-semibold">
-                  Select All ({selectedCount}/{cartItems.length})
+            <View className="mb-3">
+              {/* Select All Section - First Row */}
+              <View className="flex-row items-center justify-between mb-2">
+                <TouchableOpacity
+                  onPress={selectAll}
+                  className="flex-row items-center"
+                >
+                  <Checkbox
+                    status={
+                      availableItemsCount > 0 &&
+                      selectedCount === availableItemsCount
+                        ? "checked"
+                        : "unchecked"
+                    }
+                    color="#FF6B00"
+                  />
+                  <Text
+                    className="ml-2 text-gray-700 font-semibold truncate text-sm"
+                    numberOfLines={1}
+                    style={{ maxWidth: "70%" }}
+                  >
+                    Select All ({selectedCount}/{availableItemsCount})
+                  </Text>
+                </TouchableOpacity>
+                <Text className="text-gray-600 text-xs">
+                  Available items only
                 </Text>
-              </TouchableOpacity>
-              <View className="items-end">
-                <Text className="text-lg font-bold text-orange-600">
-                  Total: {selectedTotalPrice.toLocaleString()} VND
-                </Text>
-                <Text className="text-gray-500 text-sm">
-                  Save: {Math.round(selectedTotalPrice * 0.05).toLocaleString()}{" "}
-                  VND
-                </Text>
+              </View>
+
+              {/* Total Price Section - Second Row */}
+              <View className="flex-row items-center justify-between">
+                <Text className="text-gray-700">Total amount:</Text>
+                <View className="items-end">
+                  <Text className="text-lg font-bold text-orange-600">
+                    {selectedTotalPrice.toLocaleString()} VND
+                  </Text>
+                  <Text className="text-gray-500 text-xs">
+                    Save:{" "}
+                    {Math.round(selectedTotalPrice * 0.05).toLocaleString()} VND
+                  </Text>
+                </View>
               </View>
             </View>
 

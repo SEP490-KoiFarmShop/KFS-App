@@ -3,8 +3,9 @@ import React, { useState } from "react";
 import { useRouter } from "expo-router";
 import axios from "axios";
 import Toast from "react-native-toast-message";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export default function ConsignItem({ item }: any) {
+export default function ConsignItem({ item, onRefresh }: any) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -22,8 +23,26 @@ export default function ConsignItem({ item }: any) {
           onPress: async () => {
             try {
               setIsLoading(true);
+
+              // Get JWT token from AsyncStorage
+              const userData = await AsyncStorage.getItem("userData");
+              if (!userData) {
+                router.push("/(auth)/LoginScreen");
+                return;
+              }
+
+              const parsedToken = JSON.parse(userData);
+              const jwtToken = parsedToken?.accessToken;
+
               const response = await axios.put(
-                `https://kfsapis.azurewebsites.net/api/Consignment/ChangeStatus?consignmentId=${item.id}&status=Cancelled`
+                `https://kfsapis.azurewebsites.net/api/Consignment/ChangeStatus?consignmentId=${item.id}&status=Cancelled`,
+                {}, // Empty body for PUT request
+                {
+                  headers: {
+                    Authorization: `Bearer ${jwtToken}`,
+                    "Content-Type": "application/json",
+                  },
+                }
               );
 
               Toast.show({
@@ -33,12 +52,10 @@ export default function ConsignItem({ item }: any) {
                 position: "bottom",
               });
 
-              // Refresh the page or update local state
-              // You might want to call a refresh function passed from the parent component
-              // or use a state management solution to update the list
-
-              // Optional: Navigate back or refresh the current screen
-              // router.replace("/(components)/consignment/MyConsignment");
+              // Call the refresh function passed from parent component
+              if (onRefresh && typeof onRefresh === "function") {
+                onRefresh();
+              }
             } catch (error) {
               console.error("Error canceling consignment:", error);
               Toast.show({

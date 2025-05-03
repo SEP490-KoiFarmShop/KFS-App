@@ -109,7 +109,17 @@ const getAuctionsById = async (id) => {
 
 const getKoisById = async (id) => {
     try {
-        const response = await axios.get(`${API_BASE_URL}/products/${id}`);
+        const userData = await AsyncStorage.getItem("userData");
+        const parsedToken = JSON.parse(userData);
+        const jwtToken = parsedToken?.accessToken;
+        const response = await axios.get(`${API_BASE_URL}/products/${id}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${jwtToken}`,
+                    "Content-Type": "application/json",
+                },
+            }
+        );
         return response.data;
     } catch (error) {
         console.error('Error fetching koi fishes list:', error);

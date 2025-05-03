@@ -13,6 +13,7 @@ const ApprovedScreen = () => <TableScreen status="Approved" />;
 const RejectedScreen = () => <TableScreen status="Rejected" />;
 const AcceptedScreen = () => <TableScreen status="Accepted" />;
 const CompletedScreen = () => <TableScreen status="Completed" />;
+const CancelledScreen = () => <TableScreen status="Cancelled" />;
 
 const ConsignmentTabs = () => {
   return (
@@ -33,6 +34,7 @@ const ConsignmentTabs = () => {
       <Tab.Screen name="Accepted" component={AcceptedScreen} />
       <Tab.Screen name="Completed" component={CompletedScreen} />
       <Tab.Screen name="Re-Payment" component={RePaymentScreen} />
+      <Tab.Screen name="Cancelled" component={CancelledScreen} />
     </Tab.Navigator>
   );
 };

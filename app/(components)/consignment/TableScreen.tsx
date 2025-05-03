@@ -119,7 +119,9 @@ export default function TableScreen({ status }: any) {
         <FlatList
           data={consignments}
           keyExtractor={(item: any) => item.id.toString()}
-          renderItem={({ item }) => <ConsignItem item={item} />}
+          renderItem={({ item }) => (
+            <ConsignItem item={item} onRefresh={onRefresh} />
+          )}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl

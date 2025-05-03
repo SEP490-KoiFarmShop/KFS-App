@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,6 +20,8 @@ export default function Wallet() {
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
+  const horizontalScrollRef = useRef<ScrollView>(null);
+  const screenWidth = Dimensions.get("window").width;
 
   const transactionTypes = [
     { name: "All", type: "" },
@@ -26,10 +29,26 @@ export default function Wallet() {
     { name: "Refund", type: "Refund" },
     { name: "Withdraw", type: "Withdraw" },
     { name: "Return", type: "ReturnToConsigner" },
+    { name: "Top Up", type: "TopUp" },
   ];
 
-  const navigateToTransactions = (type: any) => {
+  const navigateToTransactions = (type: any, index: number) => {
     setActiveTab(type);
+
+    // Scroll to the selected tab
+    if (horizontalScrollRef.current) {
+      // Calculate scroll position to center the selected tab
+      const tabWidth = screenWidth / 3; // Assuming we show 3 tabs at a time
+      const scrollPosition = Math.max(
+        0,
+        index * tabWidth - screenWidth / 2 + tabWidth / 2
+      );
+      horizontalScrollRef.current.scrollTo({
+        x: scrollPosition,
+        animated: true,
+      });
+    }
+
     if (type === "") {
       router.push("WalletTransactionTab");
     } else {
@@ -224,31 +243,40 @@ export default function Wallet() {
           </Text>
         </View>
 
-        {/* Tab Buttons */}
-        <View className="flex-row mb-6">
-          {transactionTypes.map((item, index) => {
-            const isActive = activeTab === item.type;
+        {/* Horizontal Scrollable Tab Buttons */}
+        <View className="mb-6">
+          <ScrollView
+            ref={horizontalScrollRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingLeft: 5, paddingRight: 15 }}
+          >
+            {transactionTypes.map((item, index) => {
+              const isActive = activeTab === item.type;
 
-            return (
-              <TouchableOpacity
-                key={index}
-                className={`flex-1 py-4 ${
-                  isActive ? "bg-white" : "bg-gray-100"
-                } border-b-2 ${
-                  isActive ? "border-blue-500" : "border-transparent"
-                }`}
-                onPress={() => navigateToTransactions(item.type)}
-              >
-                <Text
-                  className={`text-center font-medium ${
-                    isActive ? "text-blue-500" : "text-gray-600"
-                  }`}
+              return (
+                <TouchableOpacity
+                  key={index}
+                  className={`py-4 px-4 mx-1 min-w-20 ${
+                    isActive ? "bg-white" : "bg-gray-100"
+                  } border-b-2 ${
+                    isActive ? "border-blue-500" : "border-transparent"
+                  } rounded-t-lg`}
+                  onPress={() => navigateToTransactions(item.type, index)}
                 >
-                  {item.name}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+                  <Text
+                    className={`text-center font-medium ${
+                      isActive ? "text-blue-500" : "text-gray-600"
+                    }`}
+                  >
+                    {item.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+          {/* Shadow/gradient effect to indicate scrollable content */}
+          <View className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none" />
         </View>
 
         <View className="px-4 pb-6">
@@ -257,7 +285,7 @@ export default function Wallet() {
             <Text className="text-xl font-semibold text-gray-800">
               Recent Transactions
             </Text>
-            <TouchableOpacity onPress={() => navigateToTransactions("")}>
+            <TouchableOpacity onPress={() => navigateToTransactions("", 0)}>
               <Text className="text-blue-500 font-medium text-lg">See All</Text>
             </TouchableOpacity>
           </View>
