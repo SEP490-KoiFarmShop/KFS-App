@@ -27,14 +27,15 @@ const home = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#FF6600"]} // Android
-            tintColor="#FF6600" // iOS
+            colors={["#FF6600"]}
+            tintColor="#FF6600"
           />
         }
       >
         <Header refreshTrigger={refreshTrigger} />
         <View className="p-7">
-          <Slider />
+          {/* <Slider /> */}
+          <Slider refreshTrigger={refreshTrigger} />
           <Categories />
           <LatestKoi />
         </View>

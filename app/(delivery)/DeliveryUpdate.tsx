@@ -32,6 +32,7 @@ export default function DeliveryUpdate() {
   const statusOptions = [{ label: "Delivering", value: "Delivering" }];
 
   const statusDeliveringOptions = [
+    { label: "Delivering", value: "Delivering" },
     { label: "Delivered", value: "Delivered" },
     { label: "Delivery Failed", value: "DeliveryFailed" },
     { label: "Rejected", value: "Rejected" },

@@ -162,7 +162,10 @@ export default function EditProfile() {
           setBankName(response.data.bankName);
         }
       } catch (error: any) {
-        console.error("Error fetching user:", error.response.data.Message);
+        console.error(
+          "Error fetching user:",
+          error.response?.data?.Message || error.message
+        );
         Alert.alert("Lỗi", "Không thể tải thông tin người dùng");
       } finally {
         setLoading(false);
@@ -195,15 +198,6 @@ export default function EditProfile() {
         "https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json"
       );
       setLocations(response.data);
-
-      const hcmCity = response.data.find((city: any) =>
-        city.Name.includes("Hồ Chí Minh")
-      );
-
-      if (hcmCity) {
-        setSelectedCity(hcmCity.Id);
-        setDistricts(hcmCity.Districts);
-      }
     } catch (error) {
       console.error("Error fetching location data:", error);
     }
@@ -217,6 +211,7 @@ export default function EditProfile() {
         setStreetAddress(parts[0]);
       }
 
+      // Extract ward
       const wardPart = parts.find((part) =>
         part.toLowerCase().includes("phường")
       );
@@ -225,19 +220,39 @@ export default function EditProfile() {
         setTempWardName(wardName);
       }
 
-      const districtPart = parts.find((part) =>
-        part.toLowerCase().includes("quận")
+      // Extract district
+      const districtPart = parts.find(
+        (part) =>
+          part.toLowerCase().includes("quận") ||
+          (part.toLowerCase().includes("thành phố") &&
+            !part.toLowerCase().includes("tỉnh"))
       );
       if (districtPart) {
-        const districtName = districtPart.replace(/quận/i, "").trim();
+        let districtName = districtPart;
+        if (districtPart.toLowerCase().includes("quận")) {
+          districtName = districtPart.replace(/quận/i, "").trim();
+        } else if (districtPart.toLowerCase().includes("thành phố")) {
+          districtName = districtPart.replace(/thành phố/i, "").trim();
+        }
         setTempDistrictName(districtName);
       }
 
-      const cityPart = parts.find((part) =>
-        part.toLowerCase().includes("thành phố")
+      // Extract city/province
+      const cityPart = parts.find(
+        (part) =>
+          part.toLowerCase().includes("tỉnh") ||
+          (part.toLowerCase().includes("thành phố") &&
+            !districtPart?.toLowerCase().includes("thành phố"))
       );
+
       if (cityPart) {
-        setTempCityName(cityPart.trim());
+        let cityName = cityPart;
+        if (cityPart.toLowerCase().includes("tỉnh")) {
+          cityName = cityPart.replace(/tỉnh/i, "").trim();
+        } else if (cityPart.toLowerCase().includes("thành phố")) {
+          cityName = cityPart.replace(/thành phố/i, "").trim();
+        }
+        setTempCityName(cityName);
       }
     } catch (error) {
       console.error("Error parsing address:", error);
@@ -245,35 +260,61 @@ export default function EditProfile() {
   };
 
   useEffect(() => {
-    if (locations.length > 0 && (tempDistrictName || tempWardName)) {
+    if (locations.length > 0 && tempCityName) {
+      // Find the city by partial name match
       const cityData = locations.find((city) =>
-        city.Name.toLowerCase().includes("hồ chí minh")
+        city.Name.toLowerCase().includes(tempCityName.toLowerCase())
       );
 
-      if (cityData && tempDistrictName) {
-        const district = cityData.Districts.find((dist) =>
-          dist.Name.toLowerCase().includes(tempDistrictName.toLowerCase())
-        );
+      if (cityData) {
+        setSelectedCity(cityData.Id);
+        setDistricts(cityData.Districts);
 
-        if (district) {
-          setSelectedDistrict(district.Id);
-          setWards(district.Wards);
+        if (tempDistrictName) {
+          const district = cityData.Districts.find((dist) =>
+            dist.Name.toLowerCase().includes(tempDistrictName.toLowerCase())
+          );
 
-          if (tempWardName) {
-            setTimeout(() => {
-              const ward = district.Wards.find((w) =>
-                w.Name.toLowerCase().includes(tempWardName.toLowerCase())
-              );
+          if (district) {
+            setSelectedDistrict(district.Id);
+            setWards(district.Wards);
 
-              if (ward) {
-                setSelectedWard(ward.Id);
-              }
-            }, 500);
+            if (tempWardName) {
+              setTimeout(() => {
+                const ward = district.Wards.find((w) =>
+                  w.Name.toLowerCase().includes(tempWardName.toLowerCase())
+                );
+
+                if (ward) {
+                  setSelectedWard(ward.Id);
+                }
+              }, 500);
+            }
           }
         }
+      } else {
+        // Default to Ho Chi Minh City if the city is not found
+        const hcmCity = locations.find((city) =>
+          city.Name.includes("Hồ Chí Minh")
+        );
+
+        if (hcmCity) {
+          setSelectedCity(hcmCity.Id);
+          setDistricts(hcmCity.Districts);
+        }
+      }
+    } else if (locations.length > 0 && !tempCityName) {
+      // Default to Ho Chi Minh City if no city name is parsed
+      const hcmCity = locations.find((city) =>
+        city.Name.includes("Hồ Chí Minh")
+      );
+
+      if (hcmCity) {
+        setSelectedCity(hcmCity.Id);
+        setDistricts(hcmCity.Districts);
       }
     }
-  }, [locations, tempDistrictName, tempWardName, districts]);
+  }, [locations, tempCityName, tempDistrictName, tempWardName]);
 
   useEffect(() => {
     if (locations.length > 0 && selectedCity) {
@@ -383,6 +424,9 @@ export default function EditProfile() {
     if (!streetAddress.trim()) {
       newErrors.streetAddress = "Vui lòng nhập địa chỉ";
       hasError = true;
+    } else if (streetAddress.includes(",")) {
+      newErrors.streetAddress = "Địa chỉ không được chứa dấu phẩy (,)";
+      hasError = true;
     }
 
     if (!selectedCity || !selectedDistrict || !selectedWard) {
@@ -421,7 +465,7 @@ export default function EditProfile() {
       "";
     const wardName = wards.find((ward) => ward.Id === selectedWard)?.Name || "";
 
-    const fullAddress = `${streetAddress}, phường ${wardName}, quận ${districtName}, ${cityName}`;
+    const fullAddress = `${streetAddress}, ${wardName}, ${districtName}, ${cityName}`;
 
     const updateData: UpdateProfilePayload = {
       fullName: fullName,
@@ -461,9 +505,13 @@ export default function EditProfile() {
           bankName: bankName,
         });
       }
+      router.push(`/profile/AboutMe`);
     } catch (error: any) {
       console.error("Error updating profile:", error.response.data.Message);
-      alert(error.response.data.Message);
+      Alert.alert(
+        "Lỗi",
+        error.response.data.Message || "Đã xảy ra lỗi khi cập nhật thông tin"
+      );
     } finally {
       setSubmitting(false);
     }
@@ -764,16 +812,6 @@ export default function EditProfile() {
       </View>
 
       <View className="flex-row mx-4 mb-8">
-        {/* <View className="flex-1 mr-2">
-          <CustomButton
-            title="Lịch sử đấu giá"
-            handlePress={() => {
-              console.log("Go to auction history");
-            }}
-            containerStyles="bg-blue-500 h-14"
-            isLoading={false}
-          />
-        </View> */}
         <View className="flex-1 ml-2 mr-2">
           <CustomButton
             title="Your Wallet"

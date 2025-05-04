@@ -4,7 +4,11 @@ import GlobalApi from "@/utils/GlobalApi";
 import Heading from "./Heading";
 import { useRouter } from "expo-router";
 
-const Silder = () => {
+interface SliderProps {
+  refreshTrigger?: number;
+}
+
+const Slider = ({ refreshTrigger = 0 }: SliderProps) => {
   const [sliders, setSliders] = useState<any>([]);
   const router = useRouter();
 
@@ -26,7 +30,7 @@ const Silder = () => {
     };
 
     fetchSliders();
-  }, []);
+  }, [refreshTrigger]);
 
   const isValidUrl = (url: string) => {
     return typeof url === "string" && url.startsWith("https://");
@@ -52,8 +56,7 @@ const Silder = () => {
               source={
                 isValidUrl(item.imageUrl)
                   ? { uri: item.imageUrl }
-                  : // : require("../assets/icon/defaultsilder.jpg")
-                    require("../assets/icon/defaultsilder.jpg")
+                  : require("../assets/icon/defaultsilder.jpg")
               }
             />
             <View className="px-3 py-2 bg-white w-[270]">
@@ -72,4 +75,4 @@ const Silder = () => {
   );
 };
 
-export default Silder;
+export default Slider;

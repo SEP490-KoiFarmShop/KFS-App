@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -15,7 +15,6 @@ import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import CustomButton from "@/components/CustomButton";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RadioButton } from "react-native-paper";
 import Toast from "react-native-toast-message";
@@ -27,8 +26,15 @@ const paymentMethods = [
 
 export default function InvoiceDetailScreen() {
   const router = useRouter();
-  const { invoiceId, fullName, contactPhoneNumber, address } =
-    useLocalSearchParams();
+  const params = useLocalSearchParams();
+
+  // Extract all params at once to avoid conditional hook calls
+  const invoiceId = params.invoiceId as string;
+  const fullName = params.fullName as string;
+  const contactPhoneNumber = params.contactPhoneNumber as string;
+  const address = params.address as string;
+
+  // State declarations - all hooks must be called in the same order every render
   const [invoiceData, setInvoiceData] = useState<any>(null);
   const [customerLotData, setCustomerLotData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -37,18 +43,31 @@ export default function InvoiceDetailScreen() {
     number | null
   >(null);
   const [balance, setBalance] = useState<any>(null);
+  const [userData, setUserData] = useState<any>(null);
+
+  // Fetch user token - centralized function to avoid duplication
+  const getUserToken = useCallback(async () => {
+    try {
+      const userData = await AsyncStorage.getItem("userData");
+      if (!userData) {
+        router.push("/(auth)/LoginScreen");
+        return null;
+      }
+      const parsedToken = JSON.parse(userData);
+      return parsedToken?.accessToken;
+    } catch (error) {
+      console.error("Error getting user token:", error);
+      return null;
+    }
+  }, [router]);
 
   useEffect(() => {
     const fetchInvoiceDetails = async () => {
       try {
-        const userData = await AsyncStorage.getItem("userData");
-        if (!userData) {
-          router.push("/(auth)/LoginScreen");
-          return;
-        }
+        const jwtToken = await getUserToken();
+        console.log(jwtToken);
+        if (!jwtToken) return;
 
-        const parsedToken = JSON.parse(userData);
-        const jwtToken = parsedToken?.accessToken;
         const response = await axios.get(
           `https://kfsapis.azurewebsites.net/api/v1/auction-invoices/${invoiceId}/confirm`,
           {
@@ -58,32 +77,36 @@ export default function InvoiceDetailScreen() {
             },
           }
         );
-        console.log(response.data.data);
-        setInvoiceData(response.data.data);
+
+        if (response.data?.data) {
+          setInvoiceData(response.data.data);
+        } else {
+          setError("Invalid invoice data received");
+        }
       } catch (err) {
+        console.error("Failed to fetch invoice details:", err);
         setError("Failed to fetch invoice details.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchInvoiceDetails();
-  }, [invoiceId]);
+    if (invoiceId) {
+      fetchInvoiceDetails();
+    } else {
+      setLoading(false);
+      setError("Invalid invoice ID");
+    }
+  }, [invoiceId, getUserToken]);
 
   useEffect(() => {
     const fetchBalance = async () => {
       try {
-        const userData = await AsyncStorage.getItem("userData");
-        if (!userData) {
-          router.push("/(auth)/LoginScreen");
-          return;
-        }
-
-        const parsedToken = JSON.parse(userData);
-        const jwtToken = parsedToken?.accessToken;
+        const jwtToken = await getUserToken();
+        if (!jwtToken) return;
 
         const response = await axios.get(
-          `https://kfsapis.azurewebsites.net/api/Wallet/GetWalletForCustomer`,
+          "https://kfsapis.azurewebsites.net/api/Wallet/GetWalletForCustomer",
           {
             headers: {
               Authorization: `Bearer ${jwtToken}`,
@@ -96,41 +119,97 @@ export default function InvoiceDetailScreen() {
           setBalance(response.data);
         } else {
           console.warn("Balance data is null.");
-          setBalance(null);
+          setBalance({ availableBalance: 0 });
         }
       } catch (err) {
         console.error("Failed to fetch balance:", err);
-        setError("Failed to fetch wallet balance.");
+        setBalance({ availableBalance: 0 });
       }
     };
 
     fetchBalance();
-  }, []);
+  }, [getUserToken]);
+
+  useEffect(() => {
+    const fetchCustomerLotDetails = async () => {
+      if (!invoiceData || !invoiceData.customerLotId) return;
+
+      try {
+        const jwtToken = await getUserToken();
+        if (!jwtToken) return;
+
+        const customerLotResponse = await axios.get(
+          `https://kfsapis.azurewebsites.net/api/v1/customer-lots/${invoiceData.customerLotId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (customerLotResponse.data?.data) {
+          setCustomerLotData(customerLotResponse.data.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch customer lot details:", err);
+        setError("Failed to fetch customer lot details.");
+      }
+    };
+
+    fetchCustomerLotDetails();
+  }, [invoiceData, getUserToken]);
+
+  useEffect(() => {
+    const fetchUserDetail = async () => {
+      try {
+        const jwtToken = await getUserToken();
+        if (!jwtToken) return;
+
+        const response = await axios.get(
+          "https://kfsapis.azurewebsites.net/api/v1/auth/GetCustomerDetail",
+          {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        console.log(response.data);
+        if (response.data) {
+          setUserData(response.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch user information:", err);
+      }
+    };
+
+    fetchUserDetail();
+  }, [getUserToken]);
 
   const handleConfirm = async () => {
     if (!selectedPaymentMethod) {
-      alert("Vui lòng chọn phương thức thanh toán.");
+      Alert.alert("Error", "Please select a payment method.");
       return;
     }
 
     try {
-      const userData = await AsyncStorage.getItem("userData");
-      if (!userData) {
-        router.push("/(auth)/LoginScreen");
-        return;
-      }
-
-      const parsedToken = JSON.parse(userData);
-      const jwtToken = parsedToken?.accessToken;
+      const jwtToken = await getUserToken();
+      if (!jwtToken) return;
 
       const response = await axios.post(
         "https://kfsapis.azurewebsites.net/api/v1/auction-invoices/payment",
         {
           paymentMethodId: selectedPaymentMethod,
           invoiceId: Number(invoiceId),
-          name: fullName || invoiceData.customerName,
-          phoneNumber: contactPhoneNumber || invoiceData.phone,
-          address: address || invoiceData.address,
+          name:
+            fullName ||
+            userData?.customerName ||
+            invoiceData?.customerName ||
+            "",
+          phoneNumber:
+            contactPhoneNumber || userData?.phone || invoiceData?.phone || "",
+          address: address || userData?.address || invoiceData?.address || "",
         },
         {
           headers: {
@@ -139,15 +218,15 @@ export default function InvoiceDetailScreen() {
           },
         }
       );
-      console.log(response.data);
+
       if (response.status === 200) {
-        if (response.data?.data.order_url) {
+        if (response.data?.data?.order_url) {
           Linking.openURL(response.data.data.order_url)
             .then(() => {
               router.push(`InvoiceSuccess?invoiceId=${invoiceId}`);
             })
             .catch(() => {
-              Alert.alert("Lỗi", "Không thể mở liên kết thanh toán.");
+              Alert.alert("Error", "Cannot open payment link.");
             });
         } else {
           Alert.alert("Success", "Your order has been placed successfully!", [
@@ -164,59 +243,50 @@ export default function InvoiceDetailScreen() {
           type: "success",
           position: "bottom",
           text1: "Success",
-          text2: "Your order has been placed successfully !",
+          text2: "Your order has been placed successfully!",
           visibilityTime: 2000,
         });
       }
     } catch (error: any) {
       console.error("Payment failed:", error?.message || error);
-      alert("Thanh toán thất bại. Vui lòng thử lại.");
+      Alert.alert("Error", "Payment failed. Please try again.");
     }
   };
 
-  useEffect(() => {
-    if (invoiceData && invoiceData.customerLotId) {
-      const fetchCustomerLotDetails = async () => {
-        try {
-          const userData = await AsyncStorage.getItem("userData");
-          if (!userData) {
-            router.push("/(auth)/LoginScreen");
-            return;
-          }
-
-          const parsedToken = JSON.parse(userData);
-          const jwtToken = parsedToken?.accessToken;
-          const customerLotResponse = await axios.get(
-            `https://kfsapis.azurewebsites.net/api/v1/customer-lots/${invoiceData.customerLotId}`,
-            {
-              headers: {
-                Authorization: `Bearer ${jwtToken}`,
-                "Content-Type": "application/json",
-              },
-            }
-          );
-          setCustomerLotData(customerLotResponse.data.data);
-        } catch (err) {
-          setError("Failed to fetch customer lot details.");
-        }
-      };
-
-      fetchCustomerLotDetails();
-    }
-  }, [invoiceData]);
-
   if (loading) {
     return (
-      <ActivityIndicator
-        size="large"
-        color="blue"
-        className="flex-1 justify-center items-center"
-      />
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="blue" />
+      </View>
     );
   }
 
   if (error) {
-    return <Text className="text-red-500 text-center mt-4">{error}</Text>;
+    return (
+      <View className="flex-1 justify-center items-center p-4">
+        <Text className="text-red-500 text-center">{error}</Text>
+        <TouchableOpacity
+          className="mt-4 bg-blue-500 px-4 py-2 rounded-lg"
+          onPress={() => router.back()}
+        >
+          <Text className="text-white">Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (!invoiceData) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <Text className="text-gray-500">No invoice data found</Text>
+        <TouchableOpacity
+          className="mt-4 bg-blue-500 px-4 py-2 rounded-lg"
+          onPress={() => router.back()}
+        >
+          <Text className="text-white">Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
   return (
@@ -245,33 +315,39 @@ export default function InvoiceDetailScreen() {
                 {invoiceData?.status || "N/A"}
               </Text>
               <Text className="text-sm font-semibold">
-                INVOICE NUM #{invoiceData.invoiceId}
+                INVOICE NUM #{invoiceData.invoiceId || ""}
               </Text>
             </View>
 
             <View className="flex-row items-center mt-3">
               <Image
-                source={{ uri: customerLotData?.imageUrl }}
+                source={{
+                  uri:
+                    customerLotData?.imageUrl ||
+                    "https://via.placeholder.com/150",
+                }}
                 className="w-20 h-20 rounded-md mr-4"
               />
               <View className="flex-1">
                 <Text className="text-base font-bold">
-                  {invoiceData.lotName}
+                  {invoiceData.lotName || "Unknown Item"}
                 </Text>
                 <Text className="text-green-600 text-sm">
                   YOU WIN with{" "}
                   <Text className="font-bold">
-                    {invoiceData.bidPrice.toLocaleString()} đ
+                    {(invoiceData.bidPrice || 0).toLocaleString()} đ
                   </Text>
                 </Text>
                 <Text className="text-gray-500 text-xs">
-                  Platform Fee: {invoiceData.platformFee.toLocaleString()} đ
+                  Platform Fee:{" "}
+                  {(invoiceData.platformFee || 0).toLocaleString()} đ
                 </Text>
                 <Text className="text-gray-500 text-xs">
-                  Shipping Fee: {invoiceData.shippingFee.toLocaleString()} đ
+                  Shipping Fee:{" "}
+                  {(invoiceData.shippingFee || 0).toLocaleString()} đ
                 </Text>
                 <Text className="text-gray-500 text-xs">
-                  Total: {invoiceData.totalAmount.toLocaleString()} đ
+                  Total: {(invoiceData.totalAmount || 0).toLocaleString()} đ
                 </Text>
 
                 <View className="flex-row justify-between items-center mt-2 w-full">
@@ -280,18 +356,20 @@ export default function InvoiceDetailScreen() {
                       ? "PENDING"
                       : "SOLD"}
                   </Text>
-                  <TouchableOpacity
-                    className="bg-blue-500 py-2 px-4 rounded"
-                    onPress={() =>
-                      router.push(
-                        `/(components)/LotDetailScreen?lotId=${customerLotData.lotId}`
-                      )
-                    }
-                  >
-                    <Text className="text-white font-semibold">
-                      XEM CHI TIẾT
-                    </Text>
-                  </TouchableOpacity>
+                  {customerLotData && (
+                    <TouchableOpacity
+                      className="bg-blue-500 py-2 px-4 rounded"
+                      onPress={() =>
+                        router.push(
+                          `/(components)/LotDetailScreen?lotId=${customerLotData.lotId}`
+                        )
+                      }
+                    >
+                      <Text className="text-white font-semibold">
+                        VIEW DETAILS
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             </View>
@@ -303,10 +381,21 @@ export default function InvoiceDetailScreen() {
 
               {invoiceData.status === "PendingPayment" && (
                 <TouchableOpacity
+                  // onPress={() =>
+                  //   router.push(
+                  //     `/(components)/AddInvoiceInfor?invoiceId=${invoiceId}`
+                  //   )
+                  // }
                   onPress={() =>
-                    router.push(
-                      `/(components)/AddInvoiceInfor?invoiceId=${invoiceId}`
-                    )
+                    router.push({
+                      pathname: "/AddInvoiceInfor",
+                      params: {
+                        invoiceId: invoiceId,
+                        fullName: userData.fullName,
+                        phoneNumber: userData.phoneNumber,
+                        address: userData.address,
+                      },
+                    })
                   }
                 >
                   <FontAwesome name="edit" size={18} color="gray" />
@@ -314,11 +403,11 @@ export default function InvoiceDetailScreen() {
               )}
             </View>
             <Text className="font-semibold mt-2">
-              {fullName || invoiceData.customerName} |{" "}
-              {contactPhoneNumber || invoiceData.phone || "N/A"}
+              {fullName || userData?.fullName || "N/A"} |{" "}
+              {contactPhoneNumber || userData?.phoneNumber || "N/A"}
             </Text>
             <Text className="text-gray-600 text-sm">
-              {address || invoiceData.address || "No address provided"}
+              {address || userData?.address || "No address provided"}
             </Text>
           </View>
 
@@ -328,11 +417,9 @@ export default function InvoiceDetailScreen() {
             <View className="flex-row items-center mt-2">
               <View className="w-2 h-2 bg-blue-600 rounded-full mr-2" />
               <View>
-                {/* <Text className="text-gray-600 text-sm">
-                  Start time : ${invoiceData.startTime}.toLocaleString() - To
-                  time: ${invoiceData.endTime}.toLocaleString()
-                </Text> */}
-                <Text className="font-semibold">Pending Payment</Text>
+                <Text className="font-semibold">
+                  {invoiceData.status || "Processing"}
+                </Text>
               </View>
             </View>
           </View>
@@ -384,7 +471,7 @@ export default function InvoiceDetailScreen() {
                   <View className="ml-3">
                     <Text className="text-xs text-gray-500">Balance</Text>
                     <Text className="text-xl font-semibold text-black">
-                      {balance.availableBalance.toLocaleString()} VNĐ
+                      {(balance?.availableBalance || 0).toLocaleString()} VNĐ
                     </Text>
                   </View>
                 </View>
@@ -399,25 +486,35 @@ export default function InvoiceDetailScreen() {
             <TouchableOpacity
               onPress={handleConfirm}
               disabled={
-                selectedPaymentMethod === 3 &&
-                balance?.availableBalance < invoiceData.totalAmount
+                (!address && !userData?.address) ||
+                (selectedPaymentMethod === 3 &&
+                  (balance?.availableBalance || 0) <
+                    (invoiceData.totalAmount || 0))
               }
               className={`bg-orange-500 h-14 rounded-lg shadow-md justify-center items-center ${
-                selectedPaymentMethod === 3 &&
-                balance?.availableBalance < invoiceData.totalAmount
+                (!address && !userData?.address) ||
+                (selectedPaymentMethod === 3 &&
+                  (balance?.availableBalance || 0) <
+                    (invoiceData.totalAmount || 0))
                   ? "opacity-50"
                   : ""
               }`}
             >
               <Text className="text-white font-bold text-lg">Confirm</Text>
             </TouchableOpacity>
-            {selectedPaymentMethod === 3 &&
-              balance?.availableBalance < invoiceData.totalAmount && (
-                <Text className="text-red-500 text-center mt-2">
-                  Insufficient balance. Please add funds or choose another
-                  payment method.
-                </Text>
-              )}
+
+            {!address && !userData?.address ? (
+              <Text className="text-red-500 text-center mt-2">
+                Address information is required to proceed.
+              </Text>
+            ) : selectedPaymentMethod === 3 &&
+              (balance?.availableBalance || 0) <
+                (invoiceData.totalAmount || 0) ? (
+              <Text className="text-red-500 text-center mt-2">
+                Insufficient balance. Please add funds or choose another payment
+                method.
+              </Text>
+            ) : null}
           </View>
         )}
       </KeyboardAvoidingView>

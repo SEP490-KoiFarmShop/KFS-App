@@ -468,7 +468,7 @@ export default function LotDetailScreen() {
                 🔢 Lot Number:{" "}
                 <Text className="font-semibold">{auction.ordinalNumber}</Text>
               </Text>
-              <Text className="text-gray-700 text-lg">
+              {/* <Text className="text-gray-700 text-lg">
                 ⏱️ Start Time:{" "}
                 <Text className="font-semibold">
                   {formatDateTime(auction.startTime)}
@@ -478,6 +478,27 @@ export default function LotDetailScreen() {
                 ⌛ End Time:{" "}
                 <Text className="font-semibold">
                   {formatDateTime(auction.expectedEndTime)}
+                </Text>
+              </Text> */}
+              <Text className="text-gray-700 text-lg">
+                ⏱️ Start Time:{" "}
+                <Text className="font-semibold">
+                  {formatDateTime(
+                    new Date(
+                      new Date(auction.startTime).getTime() - 7 * 60 * 60 * 1000
+                    ).toISOString()
+                  )}
+                </Text>
+              </Text>
+              <Text className="text-gray-700 text-lg">
+                ⌛ End Time:{" "}
+                <Text className="font-semibold">
+                  {formatDateTime(
+                    new Date(
+                      new Date(auction.expectedEndTime).getTime() -
+                        7 * 60 * 60 * 1000
+                    ).toISOString()
+                  )}
                 </Text>
               </Text>
               <Text className="text-gray-700 text-lg">
@@ -604,8 +625,13 @@ export default function LotDetailScreen() {
                 <Text className="text-lg text-orange-600">
                   {formatPrice(bid.amount)}
                 </Text>
+
                 <Text className="text-sm text-gray-500 mt-1">
-                  {formatDateTime(bid.createdAt)}
+                  {formatDateTime(
+                    new Date(
+                      new Date(bid.createdAt).getTime() - 7 * 60 * 60 * 1000
+                    ).toISOString()
+                  )}
                 </Text>
               </View>
             ))

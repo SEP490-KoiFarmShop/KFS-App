@@ -237,7 +237,7 @@ export default function KoiFishAll() {
 
         <TouchableOpacity
           onPress={() => {
-            setSelectedOption("Giá");
+            setSelectedOption("Price");
             const newSortOrder =
               priceSortOrder === "asc" ? "price desc" : "price";
             setPriceSortOrder(priceSortOrder === "asc" ? "desc" : "asc");
@@ -247,12 +247,12 @@ export default function KoiFishAll() {
         >
           <Text
             className={
-              selectedOption === "Giá"
+              selectedOption === "Price"
                 ? "text-red-500 font-semibold text-lg"
                 : "text-gray-500 text-lg"
             }
           >
-            Giá
+            Price
           </Text>
           <FontAwesome
             name={priceSortOrder === "asc" ? "sort-asc" : "sort-desc"}

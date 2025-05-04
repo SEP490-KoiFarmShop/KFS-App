@@ -12,6 +12,7 @@ export default function AuctionInvoiceDetail() {
   const { invoiceId } = useLocalSearchParams();
   const [invoice, setInvoice] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
     const fetchInvoiceDetails = async () => {
@@ -49,6 +50,37 @@ export default function AuctionInvoiceDetail() {
 
     fetchInvoiceDetails();
   }, [invoiceId]);
+
+  useEffect(() => {
+    const fetchUserDetail = async () => {
+      try {
+        const userData = await AsyncStorage.getItem("userData");
+        if (!userData) {
+          return;
+        }
+
+        const parsedToken = JSON.parse(userData);
+        const jwtToken = parsedToken?.accessToken;
+
+        const response = await axios.get(
+          `https://kfsapis.azurewebsites.net/api/v1/auth/GetCustomerDetail`,
+          {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (response.data) {
+          setUserData(response.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch user information:", err);
+      }
+    };
+
+    fetchUserDetail();
+  }, []);
 
   // Format date to display in a more readable format
   const formatDate = (dateString: any) => {

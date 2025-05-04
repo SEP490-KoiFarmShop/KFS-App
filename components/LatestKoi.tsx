@@ -27,7 +27,9 @@ export default function LatestKoi() {
     return (
       <TouchableOpacity
         className="mr-5"
-        onPress={() => router.push(`/KoiDetailScreen?id=${item.id}`)}
+        onPress={() =>
+          router.push(`/KoiDetailScreen?koiname=${item.name}&id=${item.id}`)
+        }
       >
         <DetailKoiItem koi={item} />
       </TouchableOpacity>
