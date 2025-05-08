@@ -67,7 +67,7 @@ export default function LotItem({ lot }: DetailLotItemProps) {
 
   return (
     <TouchableOpacity
-      className="m-3 p-[10] w-[180] h-[350] bg-white rounded-[10]"
+      className="m-3 p-[10] w-[180] h-[400] bg-white rounded-[10]"
       onPress={() =>
         router.push(`/(components)/LotDetailScreen?lotId=${lot?.id}`)
       }
@@ -92,12 +92,15 @@ export default function LotItem({ lot }: DetailLotItemProps) {
         <Text numberOfLines={1} ellipsizeMode="tail">
           Breeder: {lot?.breeders || "Unknown"}
         </Text>
+        <Text>Status: {lot?.status}</Text>
         <Text className="font-medium text-gray-600">
-          Start: {formatDate(lot?.startTime)}
+          Start at: {formatDate(lot?.startTime)}
         </Text>
-        <Text className="font-semibold text-red-500 text-lg mt-3">
-          {timeLeft}
-        </Text>
+        {lot?.status === "Auctioning" && (
+          <Text className="font-semibold text-red-500 text-lg mt-3">
+            {timeLeft}
+          </Text>
+        )}
       </View>
     </TouchableOpacity>
   );

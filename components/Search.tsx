@@ -9,13 +9,13 @@ const SearchComponent = ({
   onSearch,
   initialSearchValue = "",
   initialVariety = "",
+  isRefreshing = false,
 }: any) => {
   const [type, setType] = useState("");
   const [sex, setSex] = useState("");
   const [breeders, setBreeders] = useState([]);
   const [varieties, setVarieties] = useState([]);
   const [selectedBreeder, setSelectedBreeder] = useState("");
-  // const [selectedVariety, setSelectedVariety] = useState("");
   const [selectedVariety, setSelectedVariety] = useState(initialVariety);
   const [searchValue, setSearchValue] = useState(initialSearchValue);
   const [loadingBreeders, setLoadingBreeders] = useState(true);
@@ -30,6 +30,22 @@ const SearchComponent = ({
       setSelectedVariety(initialVariety);
     }
   }, [initialSearchValue, initialVariety]);
+
+  // Reset all filters when isRefreshing is true
+  useEffect(() => {
+    if (isRefreshing) {
+      resetAllFilters();
+    }
+  }, [isRefreshing]);
+
+  const resetAllFilters = () => {
+    setType("");
+    setSex("");
+    setSelectedBreeder("");
+    setSelectedVariety("");
+    setSearchValue("");
+  };
+
   const submit = () => {
     onSearch(searchValue, sex, type, selectedVariety, selectedBreeder);
   };

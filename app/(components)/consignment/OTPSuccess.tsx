@@ -189,7 +189,7 @@ export default function OTPSuccess() {
     } catch (error: any) {
       console.error("Wallet Payment Error:", error);
       const errorMessage =
-        error.response?.data?.message ||
+        error.response.data.Message ||
         "Failed to process wallet payment. Please check your balance.";
       Alert.alert("Payment Failed", errorMessage);
     }

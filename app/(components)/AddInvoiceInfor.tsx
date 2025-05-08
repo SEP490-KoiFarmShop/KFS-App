@@ -231,7 +231,9 @@ export default function AddInvoiceInfor(): React.ReactElement {
               <Entypo name="chevron-thin-left" size={24} color="black" />
             </TouchableOpacity>
             <Text className="ml-4 text-2xl font-bold">
-              {isEditing ? "Edit Order Information" : "Add Order Information"}
+              {isEditing
+                ? "Edit Invoice Information"
+                : "Add Invoice Information"}
             </Text>
           </View>
 

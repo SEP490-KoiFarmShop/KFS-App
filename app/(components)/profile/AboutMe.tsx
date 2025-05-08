@@ -13,6 +13,7 @@ import axios from "axios";
 import { formatCurrency, formatDate } from "../../../utils/formatters";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import Entypo from "@expo/vector-icons/Entypo";
 
 interface CustomerDetail {
   id: number;
@@ -163,10 +164,17 @@ export default function CustomerDetailScreen() {
 
   return (
     <ScrollView className="flex-1 bg-gray-50">
+      <View className="flex-row items-center mt-8">
+        <TouchableOpacity
+          onPress={() => router.push(`/(tabs)/home`)}
+          className="p-2 rounded-full bg-gray-100 ml-3"
+        >
+          <Entypo name="chevron-thin-left" size={24} color="black" />
+        </TouchableOpacity>
+        <Text className="ml-4 text-2xl font-bold">About Me</Text>
+      </View>
       <View className="bg-white shadow-sm rounded-lg mx-4 my-4 overflow-hidden">
-        {/* Header with Edit Button */}
         <View className="bg-blue-600 p-4 relative">
-          {/* Improved Edit Button with TouchableHighlight and larger touch area */}
           <TouchableHighlight
             className="absolute top-2 right-2 z-10"
             onPress={handleEditPress}
@@ -263,16 +271,6 @@ export default function CustomerDetailScreen() {
             ]}
           />
         </View>
-
-        {/* Actions */}
-        {/* <View className="flex-row justify-center p-4 bg-gray-50 border-t border-gray-200">
-          <TouchableOpacity
-            className="bg-green-500 py-2 px-4 rounded-lg flex-row items-center"
-            onPress={() => Alert.alert("Lịch sử giao dịch")}
-          >
-            <Text className="text-white font-medium">Lịch sử giao dịch</Text>
-          </TouchableOpacity>
-        </View> */}
       </View>
     </ScrollView>
   );

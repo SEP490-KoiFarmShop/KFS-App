@@ -46,7 +46,7 @@ export default function InvoiceList() {
         <Tab.Screen
           name="InvoiceCreated"
           component={InvoiceCreatedScreen}
-          options={{ tabBarLabel: "PendingPayment" }}
+          options={{ tabBarLabel: "Pending Payment" }}
         />
         <Tab.Screen
           name="Paid"

@@ -15,7 +15,6 @@ import CustomButton from "@/components/CustomButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
 
-// Define interfaces for data structures
 interface Ward {
   Id: string;
   Name: string;

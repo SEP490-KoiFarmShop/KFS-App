@@ -7,7 +7,8 @@ export default function InvoiceSuccess() {
   const router = useRouter();
 
   const viewDetail = () => {
-    router.push(`/(components)/InvoiceDetailScreen?invoiceId=${invoiceId}`);
+    // router.push(`/(components)/InvoiceDetailScreen?invoiceId=${invoiceId}`);
+    router.push(`/(components)/invoice/InvoiceHome?orderStatus=Paid`);
   };
 
   const goHome = () => {

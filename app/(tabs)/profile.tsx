@@ -127,15 +127,9 @@ export default function Profile() {
         </View>
         <View className="flex-row justify-around mt-3">
           <TouchableOpacity
-            onPress={() =>
-              router.push("/invoice/InvoiceHome?orderStatus=Pending%20Payment")
-            }
+            onPress={() => router.push("/invoice/InvoiceHome?orderStatus=Paid")}
           >
-            <IconLabel
-              icon="credit-card"
-              label="Pending Payment"
-              library="Feather"
-            />
+            <IconLabel icon="credit-card" label="Paid" library="Feather" />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() =>
@@ -155,12 +149,22 @@ export default function Profile() {
           >
             <IconLabel icon="check-circle" label="Finished" library="Feather" />
           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() =>
+              router.push("/invoice/InvoiceHome?orderStatus=Cancelled")
+            }
+          >
+            <IconLabel
+              icon="cancel"
+              label="Cancelled"
+              library="MaterialIcons"
+            />
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* My Utilities */}
       <View className="bg-white p-4 mt-2">
-        <Text className="font-semibold">Tiện ích của tôi</Text>
+        <Text className="font-semibold">My Utilities</Text>
         <View className="flex-row justify-around mt-3">
           <TouchableOpacity onPress={() => router.push(`(components)/Wallet`)}>
             <IconLabel icon="wallet" label="My Wallet" library="Entypo" />

@@ -546,6 +546,7 @@ const consignment = () => {
               className="border-b border-gray-200 "
               value={desiredPrice}
               onChangeText={setDesiredPrice}
+              keyboardType="numeric"
             />
           </View>
 

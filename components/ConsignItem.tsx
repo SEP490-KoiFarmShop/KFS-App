@@ -78,11 +78,12 @@ export default function ConsignItem({ item, onRefresh }: any) {
       {/* Header */}
       <View className="flex-row items-center justify-between mb-2">
         <Text className="font-bold text-gray-700">Breeder: {item.source}</Text>
-        <Text className="text-red-500 font-semibold text-xs">
-          {item.status}
+      </View>
+      <View className="flex-row items-center justify-end mb-2">
+        <Text className="text-red-500 font-semibold text-sm mr-2">
+          Status: {item.status}
         </Text>
       </View>
-
       {/* Product Info */}
       <View className="flex-row flex-wrap ml-3">
         {/* {item?.status !== "Pending" && item?.status !== "Rejected" && ( */}

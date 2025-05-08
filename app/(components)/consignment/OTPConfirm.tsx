@@ -63,7 +63,7 @@ export default function OTPConfirm() {
     } catch (error: any) {
       console.error(
         "Error creating contract:",
-        error.response?.data || error.message
+        error.response.data || error.message
       );
       throw error;
     }
@@ -123,7 +123,7 @@ export default function OTPConfirm() {
         Alert.alert("Error", "Invalid OTP. Please try again.");
       }
     } catch (error: any) {
-      console.error("Lỗi xác thực OTP:", error.response?.data || error.message);
+      console.error("Lỗi xác thực OTP:", error.response.data.Message);
       Alert.alert("Error", "Failed to verify OTP. Please try again.");
     }
   };

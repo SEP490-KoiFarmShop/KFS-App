@@ -10,7 +10,7 @@ const Tab = createMaterialTopTabNavigator();
 
 const PaidScreen = () => <InvoiceTable status="Paid" />;
 // const PendingScreen = () => <InvoiceTable status="Pending" />;
-const PendingPaymentScreen = () => <InvoiceTable status="PendingPayment" />;
+// const PendingPaymentScreen = () => <InvoiceTable status="PendingPayment" />;
 const CancelledScreen = () => <InvoiceTable status="Cancelled" />;
 const DeliveredScreen = () => <InvoiceTable status="Delivered" />;
 const FinishedScreen = () => <InvoiceTable status="Finished" />;
@@ -39,7 +39,7 @@ const AuctionInvoiceTabs = () => {
       <Tab.Screen name="Delivered" component={DeliveredScreen} />
       <Tab.Screen name="Finished" component={FinishedScreen} />
       <Tab.Screen name="Cancelled" component={CancelledScreen} />
-      <Tab.Screen name="Pending Payment" component={PendingPaymentScreen} />
+      {/* <Tab.Screen name="Pending Payment" component={PendingPaymentScreen} /> */}
     </Tab.Navigator>
   );
 };

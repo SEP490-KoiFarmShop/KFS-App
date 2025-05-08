@@ -28,13 +28,11 @@ export default function InvoiceDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
-  // Extract all params at once to avoid conditional hook calls
   const invoiceId = params.invoiceId as string;
   const fullName = params.fullName as string;
   const contactPhoneNumber = params.contactPhoneNumber as string;
   const address = params.address as string;
 
-  // State declarations - all hooks must be called in the same order every render
   const [invoiceData, setInvoiceData] = useState<any>(null);
   const [customerLotData, setCustomerLotData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -44,6 +42,7 @@ export default function InvoiceDetailScreen() {
   >(null);
   const [balance, setBalance] = useState<any>(null);
   const [userData, setUserData] = useState<any>(null);
+  const [previousAddress, setPreviousAddress] = useState<string>("");
 
   // Fetch user token - centralized function to avoid duplication
   const getUserToken = useCallback(async () => {
@@ -61,6 +60,64 @@ export default function InvoiceDetailScreen() {
     }
   }, [router]);
 
+  // Calculate shipping based on address
+  const calculateShipping = useCallback(
+    async (addressToCalculate: any) => {
+      if (!addressToCalculate || !invoiceId) return;
+
+      try {
+        const jwtToken = await getUserToken();
+        if (!jwtToken) return;
+
+        setLoading(true);
+
+        const response = await axios.put(
+          `https://kfsapis.azurewebsites.net/api/v1/auction-invoices/${invoiceId}/payment-details/address-calculate`,
+          {
+            address: addressToCalculate,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (response.status === 200 && response.data?.data) {
+          setInvoiceData(response.data.data);
+          setPreviousAddress(addressToCalculate);
+          // Toast.show({
+          //   type: "success",
+          //   position: "bottom",
+          //   text1: "Success",
+          //   text2: "Shipping fee calculated based on your address",
+          //   visibilityTime: 2000,
+          // });
+        }
+      } catch (err) {
+        console.error("Failed to calculate shipping:", err);
+        Toast.show({
+          type: "error",
+          position: "bottom",
+          text1: "Error",
+          text2: "Failed to calculate shipping fee",
+          visibilityTime: 2000,
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [invoiceId, getUserToken]
+  );
+
+  // Check and calculate shipping if address changed
+  useEffect(() => {
+    if (address && previousAddress !== address) {
+      calculateShipping(address);
+    }
+  }, [address, previousAddress, calculateShipping]);
+
   useEffect(() => {
     const fetchInvoiceDetails = async () => {
       try {
@@ -77,9 +134,10 @@ export default function InvoiceDetailScreen() {
             },
           }
         );
-
+        console.log(response.data.data);
         if (response.data?.data) {
           setInvoiceData(response.data.data);
+          setPreviousAddress(response.data.data.address || "");
         } else {
           setError("Invalid invoice data received");
         }
@@ -147,7 +205,7 @@ export default function InvoiceDetailScreen() {
             },
           }
         );
-
+        // console.log(customerLotResponse.data.data);
         if (customerLotResponse.data?.data) {
           setCustomerLotData(customerLotResponse.data.data);
         }
@@ -204,12 +262,11 @@ export default function InvoiceDetailScreen() {
           invoiceId: Number(invoiceId),
           name:
             fullName ||
-            userData?.customerName ||
             invoiceData?.customerName ||
+            userData?.customerName ||
             "",
-          phoneNumber:
-            contactPhoneNumber || userData?.phone || invoiceData?.phone || "",
-          address: address || userData?.address || invoiceData?.address || "",
+          phoneNumber: contactPhoneNumber || userData?.phoneNumber || "",
+          address: address || userData?.address || "",
         },
         {
           headers: {
@@ -322,9 +379,7 @@ export default function InvoiceDetailScreen() {
             <View className="flex-row items-center mt-3">
               <Image
                 source={{
-                  uri:
-                    customerLotData?.imageUrl ||
-                    "https://via.placeholder.com/150",
+                  uri: customerLotData?.imageUrl,
                 }}
                 className="w-20 h-20 rounded-md mr-4"
               />
@@ -346,7 +401,11 @@ export default function InvoiceDetailScreen() {
                   Shipping Fee:{" "}
                   {(invoiceData.shippingFee || 0).toLocaleString()} đ
                 </Text>
-                <Text className="text-gray-500 text-xs">
+                <Text className="text-red-500 text-xs">
+                  Deposit amount:{" "}
+                  {(invoiceData.depositAmount || 0).toLocaleString()} đ
+                </Text>
+                <Text className="text-blue-500 font-bold text-xs">
                   Total: {(invoiceData.totalAmount || 0).toLocaleString()} đ
                 </Text>
 
@@ -381,19 +440,16 @@ export default function InvoiceDetailScreen() {
 
               {invoiceData.status === "PendingPayment" && (
                 <TouchableOpacity
-                  // onPress={() =>
-                  //   router.push(
-                  //     `/(components)/AddInvoiceInfor?invoiceId=${invoiceId}`
-                  //   )
-                  // }
                   onPress={() =>
                     router.push({
                       pathname: "/AddInvoiceInfor",
                       params: {
                         invoiceId: invoiceId,
-                        fullName: userData.fullName,
-                        phoneNumber: userData.phoneNumber,
-                        address: userData.address,
+                        fullName: userData?.fullName || fullName,
+                        phoneNumber:
+                          userData?.phoneNumber || contactPhoneNumber,
+                        address:
+                          address || userData?.address || invoiceData?.address,
                       },
                     })
                   }
@@ -403,11 +459,21 @@ export default function InvoiceDetailScreen() {
               )}
             </View>
             <Text className="font-semibold mt-2">
-              {fullName || userData?.fullName || "N/A"} |{" "}
-              {contactPhoneNumber || userData?.phoneNumber || "N/A"}
+              {fullName ||
+                invoiceData?.customerName ||
+                userData?.fullName ||
+                "N/A"}{" "}
+              |{" "}
+              {contactPhoneNumber ||
+                invoiceData?.phone ||
+                userData?.phoneNumber ||
+                "N/A"}
             </Text>
             <Text className="text-gray-600 text-sm">
-              {address || userData?.address || "No address provided"}
+              {address ||
+                invoiceData?.address ||
+                userData?.address ||
+                "No address provided"}
             </Text>
           </View>
 
@@ -486,13 +552,13 @@ export default function InvoiceDetailScreen() {
             <TouchableOpacity
               onPress={handleConfirm}
               disabled={
-                (!address && !userData?.address) ||
+                (!address && !invoiceData?.address && !userData?.address) ||
                 (selectedPaymentMethod === 3 &&
                   (balance?.availableBalance || 0) <
                     (invoiceData.totalAmount || 0))
               }
               className={`bg-orange-500 h-14 rounded-lg shadow-md justify-center items-center ${
-                (!address && !userData?.address) ||
+                (!address && !invoiceData?.address && !userData?.address) ||
                 (selectedPaymentMethod === 3 &&
                   (balance?.availableBalance || 0) <
                     (invoiceData.totalAmount || 0))
@@ -503,7 +569,7 @@ export default function InvoiceDetailScreen() {
               <Text className="text-white font-bold text-lg">Confirm</Text>
             </TouchableOpacity>
 
-            {!address && !userData?.address ? (
+            {!address && !invoiceData?.address && !userData?.address ? (
               <Text className="text-red-500 text-center mt-2">
                 Address information is required to proceed.
               </Text>

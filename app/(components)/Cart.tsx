@@ -62,7 +62,6 @@ export default function Cart() {
           },
         }
       );
-      console.log(response.data.items);
 
       if (response.data && response.data.items) {
         setCartItems(response.data.items);
@@ -164,9 +163,6 @@ export default function Cart() {
         }
       );
 
-      // Handle successful removal
-      console.log("Items removed from cart:", response.data);
-
       // Clear selected items that were removed
       const newSelectedItems = { ...selectedItems };
       koiFishIds.forEach((id) => {
@@ -258,13 +254,10 @@ export default function Cart() {
       const parsedToken = JSON.parse(token);
       const jwtToken = parsedToken?.accessToken;
 
-      console.log("Selected Koi Fish IDs:", selectedKoiFishIds);
-
       const queryString = selectedKoiFishIds
         .map((id) => `koi-fish-ids=${id}`)
         .join("&");
       const url = `https://kfsapis.azurewebsites.net/api/v1/orders/check-out?${queryString}`;
-      console.log("Checkout URL:", url);
 
       const response = await axios.get(url, {
         headers: {
@@ -275,15 +268,14 @@ export default function Cart() {
 
       router.push(`/OrderDetail?orderId=${selectedKoiFishIds.join("x")}`);
     } catch (error: any) {
-      console.error("Error during checkout:", error.response);
-      Alert.alert("Error", "Checkout failed. Please try again.");
+      console.error("Error during checkout:", error.response.data.Message);
+      Alert.alert(error.response.data.Message);
     } finally {
       setIsLoading(false);
     }
   };
 
   const toggleCheckbox = (productId: number) => {
-    // Check if the item is available before allowing selection
     const item = cartItems.find((item: any) => item.productId === productId);
 
     if (!item.isAvailable) {
@@ -354,7 +346,7 @@ export default function Cart() {
         <View className="flex-row items-center justify-between p-5 bg-white shadow-md">
           <View className="flex-row items-center">
             <TouchableOpacity
-              onPress={() => router.back()}
+              onPress={() => router.push(`/(tabs)/home`)}
               className="p-2 rounded-full bg-gray-100"
             >
               <Entypo name="chevron-thin-left" size={24} color="black" />
@@ -543,10 +535,10 @@ export default function Cart() {
                   <Text className="text-lg font-bold text-orange-600">
                     {selectedTotalPrice.toLocaleString()} VND
                   </Text>
-                  <Text className="text-gray-500 text-xs">
+                  {/* <Text className="text-gray-500 text-xs">
                     Save:{" "}
                     {Math.round(selectedTotalPrice * 0.05).toLocaleString()} VND
-                  </Text>
+                  </Text> */}
                 </View>
               </View>
             </View>

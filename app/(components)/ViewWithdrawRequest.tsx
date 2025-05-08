@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   SafeAreaView,
+  Image,
 } from "react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "expo-router";
@@ -20,6 +21,11 @@ interface WithdrawRequest {
   walletId: number;
   amount: number;
   status: string;
+  bankAccountNumber: string;
+  bankAccountName: string;
+  bankName: string;
+  confirmImageUrl: string;
+  rejectReason: string;
   createdAt: string;
 }
 
@@ -151,12 +157,12 @@ export default function ViewWithdrawRequest() {
           textColor: "text-amber-500",
           dotColor: "bg-amber-500",
         };
-      // case "approved":
-      //   return {
-      //     bgColor: "bg-emerald-100",
-      //     textColor: "text-emerald-600",
-      //     dotColor: "bg-emerald-600",
-      //   };
+      case "transfered":
+        return {
+          bgColor: "bg-green-100",
+          textColor: "text-green-500",
+          dotColor: "bg-green-500",
+        };
       case "rejected":
         return {
           bgColor: "bg-red-100",
@@ -176,6 +182,13 @@ export default function ViewWithdrawRequest() {
           dotColor: "bg-gray-500",
         };
     }
+  };
+
+  // Count requests by status
+  const countByStatus = (status: string) => {
+    return withdrawRequests.filter(
+      (r) => r.status.toLowerCase() === status.toLowerCase()
+    ).length;
   };
 
   return (
@@ -247,35 +260,23 @@ export default function ViewWithdrawRequest() {
                   </Text>
                 </View>
                 <View className="items-center">
-                  <Text className="text-2xl font-bold text-orange-500">
-                    {
-                      withdrawRequests.filter(
-                        (r) => r.status.toLowerCase() === "pending"
-                      ).length
-                    }
+                  <Text className="text-2xl font-bold text-amber-500">
+                    {countByStatus("pending")}
                   </Text>
                   <Text className="text-xs text-gray-500 mt-1">Pending</Text>
                 </View>
                 <View className="items-center">
+                  <Text className="text-2xl font-bold text-green-500">
+                    {countByStatus("transfered")}
+                  </Text>
+                  <Text className="text-xs text-gray-500 mt-1">Transfered</Text>
+                </View>
+                <View className="items-center">
                   <Text className="text-2xl font-bold text-red-500">
-                    {
-                      withdrawRequests.filter(
-                        (r) => r.status.toLowerCase() === "rejected"
-                      ).length
-                    }
+                    {countByStatus("rejected")}
                   </Text>
                   <Text className="text-xs text-gray-500 mt-1">Rejected</Text>
                 </View>
-                {/* <View className="items-center">
-                  <Text className="text-2xl font-bold text-green-500">
-                    {
-                      withdrawRequests.filter(
-                        (r) => r.status.toLowerCase() === "completed"
-                      ).length
-                    }
-                  </Text>
-                  <Text className="text-xs text-gray-500 mt-1">Completed</Text>
-                </View> */}
               </View>
             </View>
 
@@ -317,12 +318,49 @@ export default function ViewWithdrawRequest() {
                       </Text>
                     </View>
 
-                    <View className="flex-row justify-between">
+                    <View className="flex-row justify-between mb-2">
+                      <Text className="text-gray-500 text-sm">Bank Info:</Text>
+                      <Text className="text-gray-700 font-medium text-sm">
+                        {request.bankName} - {request.bankAccountNumber}
+                      </Text>
+                    </View>
+
+                    <View className="flex-row justify-between mb-2">
                       <Text className="text-gray-500 text-sm">Date:</Text>
                       <Text className="text-gray-700 font-medium text-sm">
                         {formatDate(request.createdAt)}
                       </Text>
                     </View>
+
+                    {/* Show confirmation image for transfered requests */}
+                    {request.status.toLowerCase() === "transfered" &&
+                      request.confirmImageUrl && (
+                        <View className="mt-2">
+                          <Text className="text-gray-500 text-sm mb-1">
+                            Confirmation:
+                          </Text>
+                          <Image
+                            source={{ uri: request.confirmImageUrl }}
+                            className="w-full h-48 rounded-lg"
+                            resizeMode="contain"
+                          />
+                        </View>
+                      )}
+
+                    {/* Show rejection reason for rejected requests */}
+                    {request.status.toLowerCase() === "rejected" &&
+                      request.rejectReason && (
+                        <View className="mt-2">
+                          <Text className="text-gray-500 text-sm mb-1">
+                            Reason for rejection:
+                          </Text>
+                          <View className="bg-red-50 p-3 rounded-lg">
+                            <Text className="text-red-600 text-sm">
+                              {request.rejectReason}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
                   </View>
                 </View>
               );

@@ -29,7 +29,10 @@ export default function DeliveryUpdate() {
   const [cancelReasons, setCancelReasons] = useState<any[]>([]);
   const [selectedCancelReason, setSelectedCancelReason] = useState<string>("");
 
-  const statusOptions = [{ label: "Delivering", value: "Delivering" }];
+  const statusOptions = [
+    { label: "Assigned", value: "Assigned" },
+    { label: "Delivering", value: "Delivering" },
+  ];
 
   const statusDeliveringOptions = [
     { label: "Delivering", value: "Delivering" },
@@ -46,6 +49,11 @@ export default function DeliveryUpdate() {
   const statusDeliveryFailedOptions = [
     { label: "Delivering", value: "Delivering" },
     { label: "DeliveryFailed", value: "DeliveryFailed" },
+  ];
+
+  const statusRejectedOptions = [
+    { label: "Delivering", value: "Delivering" },
+    { label: "Rejected", value: "Rejected" },
   ];
 
   const pickImage = async () => {

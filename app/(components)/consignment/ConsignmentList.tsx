@@ -9,6 +9,7 @@ const Tab = createMaterialTopTabNavigator();
 
 const PendingScreen = () => <TableScreen status="Pending" />;
 const AssignedScreen = () => <TableScreen status="Assigned" />;
+const CheckedScreen = () => <TableScreen status="Checked" />;
 const RePaymentScreen = () => <TableScreen status="PendingDepositPayment" />;
 const ApprovedScreen = () => <TableScreen status="Approved" />;
 const RejectedScreen = () => <TableScreen status="Rejected" />;
@@ -31,6 +32,7 @@ const ConsignmentTabs = () => {
     >
       <Tab.Screen name="Pending" component={PendingScreen} />
       <Tab.Screen name="Assigned" component={AssignedScreen} />
+      <Tab.Screen name="Checked" component={CheckedScreen} />
       <Tab.Screen name="Approved" component={ApprovedScreen} />
       <Tab.Screen name="Rejected" component={RejectedScreen} />
       <Tab.Screen name="Accepted" component={AcceptedScreen} />

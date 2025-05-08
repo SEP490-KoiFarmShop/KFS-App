@@ -36,6 +36,11 @@ interface Koi {
   certificateImage: { url: string }[];
   isConsignedBy: string;
   isAddableToCart: boolean;
+  origin: string;
+  type: string;
+  fromSize?: number;
+  toSize?: number;
+  feedingAmountPerDay?: string;
 }
 
 export default function KoiDetailScreen() {
@@ -79,6 +84,8 @@ export default function KoiDetailScreen() {
         : [];
 
       const formattedKoi: Koi = {
+        type: apiData.type || "Unknown",
+        origin: apiData.origin || "Unknown",
         id: apiData.id?.toString() || "",
         name: apiData.name || "Unknown",
         sex: apiData.gender || "Unknown",
@@ -97,6 +104,9 @@ export default function KoiDetailScreen() {
         isInConsignment: apiData.isInConsignment || false,
         isConsignedBy: apiData.isConsignedBy || "Unknown",
         isAddableToCart: apiData.isAddableToCart,
+        fromSize: apiData.fromSize || 0,
+        toSize: apiData.toSize || 0,
+        feedingAmountPerDay: apiData.feedingAmountPerDay || "Unknown",
       };
 
       setKoisById(formattedKoi);
@@ -277,16 +287,27 @@ export default function KoiDetailScreen() {
           </Text>
           <View className="mt-3 mb-3">
             <Text className="text-gray-700 text-lg">
-              💰 Type sell: {koisById.category.name}
+              🌍 Origin: {koisById.origin}
             </Text>
             <Text className="text-gray-700 text-lg">
-              ♂️ Gender: {koisById.sex}
+              🏷️ Type sell: {koisById.category.name}
             </Text>
             <Text className="text-gray-700 text-lg">
-              📏 Size: {koisById.size} cm
+              ⚤ Gender: {koisById.sex}
             </Text>
+            {koisById.category.name === "KoiIndividual" && (
+              <Text className="text-gray-700 text-lg">
+                📏 Size: {koisById.size} cm
+              </Text>
+            )}
+            {koisById.category.name === "KoiPack" && (
+              <Text className="text-gray-700 text-lg">
+                📏 Size: from {koisById.fromSize} - to {koisById.toSize} cm
+              </Text>
+            )}
+
             <Text className="text-gray-700 text-lg">
-              📅 Born Date: {formatDate(koisById.bornDate)}
+              🐣 Born Date: {formatDate(koisById.bornDate)}
             </Text>
             <Text className="text-gray-700 text-lg">
               ✅ Status:{" "}
@@ -295,7 +316,10 @@ export default function KoiDetailScreen() {
               </Text>
             </Text>
             <Text className="text-gray-700 text-lg">
-              🎨 Varieties: {koisById.varieties}
+              🐠 Varieties: {koisById.varieties}
+            </Text>
+            <Text className="text-gray-700 text-lg">
+              🍽️ Feeding Amount Per Day: {koisById.feedingAmountPerDay}g
             </Text>
 
             {koisById.isInConsignment && (

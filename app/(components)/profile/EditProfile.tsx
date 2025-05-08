@@ -143,7 +143,7 @@ export default function EditProfile() {
         setCustomer(response.data);
         setFullName(response.data.fullName);
         setPhoneNumber(response.data.phoneNumber);
-
+        console.log("address", response.data.address);
         if (response.data.address) {
           parseAddress(response.data.address);
         }
@@ -220,33 +220,53 @@ export default function EditProfile() {
         setTempWardName(wardName);
       }
 
-      // Extract district
-      const districtPart = parts.find(
-        (part) =>
-          part.toLowerCase().includes("quận") ||
-          (part.toLowerCase().includes("thành phố") &&
-            !part.toLowerCase().includes("tỉnh"))
-      );
-      if (districtPart) {
-        let districtName = districtPart;
-        if (districtPart.toLowerCase().includes("quận")) {
-          districtName = districtPart.replace(/quận/i, "").trim();
-        } else if (districtPart.toLowerCase().includes("thành phố")) {
-          districtName = districtPart.replace(/thành phố/i, "").trim();
+      // Extract district - Modified to handle "Thành phố Thủ Đức" correctly
+      // First look for district in position 2 (0-indexed)
+      if (parts.length >= 3) {
+        const possibleDistrict = parts[2];
+
+        // Check if it contains "Thành phố" and is not the last part (which would be the main city)
+        if (
+          possibleDistrict.toLowerCase().includes("thành phố") &&
+          parts.length > 3
+        ) {
+          const districtName = possibleDistrict
+            .replace(/thành phố/i, "")
+            .trim();
+          setTempDistrictName(districtName);
+        } else if (possibleDistrict.toLowerCase().includes("quận")) {
+          const districtName = possibleDistrict.replace(/quận/i, "").trim();
+          setTempDistrictName(districtName);
         }
-        setTempDistrictName(districtName);
       }
 
-      // Extract city/province
-      const cityPart = parts.find(
-        (part) =>
-          part.toLowerCase().includes("tỉnh") ||
-          (part.toLowerCase().includes("thành phố") &&
-            !districtPart?.toLowerCase().includes("thành phố"))
-      );
+      // If we couldn't find the district above, try the old method
+      if (!tempDistrictName) {
+        const districtPart = parts.find(
+          (part) =>
+            part.toLowerCase().includes("quận") ||
+            (part.toLowerCase().includes("thành phố") &&
+              !part.toLowerCase().includes("tỉnh") &&
+              // Make sure this isn't the main city
+              parts.indexOf(part) < parts.length - 1)
+        );
 
-      if (cityPart) {
+        if (districtPart) {
+          let districtName = districtPart;
+          if (districtPart.toLowerCase().includes("quận")) {
+            districtName = districtPart.replace(/quận/i, "").trim();
+          } else if (districtPart.toLowerCase().includes("thành phố")) {
+            districtName = districtPart.replace(/thành phố/i, "").trim();
+          }
+          setTempDistrictName(districtName);
+        }
+      }
+
+      // Extract city/province - always the last part
+      if (parts.length > 0) {
+        const cityPart = parts[parts.length - 1];
         let cityName = cityPart;
+
         if (cityPart.toLowerCase().includes("tỉnh")) {
           cityName = cityPart.replace(/tỉnh/i, "").trim();
         } else if (cityPart.toLowerCase().includes("thành phố")) {
@@ -652,7 +672,6 @@ export default function EditProfile() {
             selectedValue={selectedDistrict}
             onValueChange={(itemValue) => {
               setSelectedDistrict(itemValue);
-              // Clear temp ward value to let normal selection behavior take over
               setTempWardName("");
             }}
             mode="dropdown"

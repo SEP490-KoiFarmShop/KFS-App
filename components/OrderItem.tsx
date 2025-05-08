@@ -5,17 +5,18 @@ import {
   Image,
   Alert,
   Linking,
+  FlatList,
 } from "react-native";
 import React, { useState } from "react";
 import axios from "axios";
 import { ActivityIndicator } from "react-native-paper";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function OrderItem({ item }: any) {
   const [loading, setLoading] = useState(false);
-  const [finishLoading, setFinishLoading] = useState(false);
   const router = useRouter();
+  // console.log(item);
 
   const handleRePayment = async () => {
     try {
@@ -49,104 +50,112 @@ export default function OrderItem({ item }: any) {
     }
   };
 
-  const handleDetail = async () => {
-    router.push(`/(components)/order/OrderDetail?orderId=${item.id}`);
-  };
+  const handleCancel = async () => {
+    try {
+      const tokenData = await AsyncStorage.getItem("userData");
+      if (!tokenData) {
+        Alert.alert("Error", "You need to login first!");
+        return;
+      }
 
-  const confirmFinishOrder = () => {
-    Alert.alert(
-      "Confirm",
-      "Are you sure you want to mark this order as finished?",
-      [
+      const parsedToken = JSON.parse(tokenData);
+      const jwtToken = parsedToken?.accessToken;
+
+      Alert.alert("Cancel", "Do you want cancel this order ?", [
         {
           text: "Cancel",
           style: "cancel",
         },
         {
           text: "Confirm",
-          onPress: handleFinishOrder,
-        },
-      ],
-      { cancelable: true }
-    );
-  };
-
-  const handleFinishOrder = async () => {
-    try {
-      const userData = await AsyncStorage.getItem("userData");
-      if (!userData) {
-        router.push("/(auth)/LoginScreen");
-        return;
-      }
-
-      const parsedToken = JSON.parse(userData);
-      const jwtToken = parsedToken?.accessToken;
-
-      setFinishLoading(true);
-
-      const response = await axios.put(
-        `https://kfsapis.azurewebsites.net/api/v1/orders/finished/${item.id}`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
-            "Content-Type": "application/json",
+          onPress: async () => {
+            try {
+              setLoading(true);
+              const response = await axios.put(
+                `https://kfsapis.azurewebsites.net/api/v1/orders/cancelled/${item.id}`,
+                {},
+                {
+                  headers: {
+                    Authorization: `Bearer ${jwtToken}`,
+                    "Content-Type": "application/json",
+                  },
+                }
+              );
+              Alert.alert("Success", "Order has been cancelled successfully");
+            } catch (error: any) {
+              console.error(
+                "Error:",
+                error.response.data.Message || error.message
+              );
+              Alert.alert(
+                "Error",
+                error.response.data.Message || "Failed to cancel order"
+              );
+            } finally {
+              setLoading(false);
+            }
           },
-        }
-      );
-
-      if (response.data && response.status === 200) {
-        Alert.alert("Success", "Order marked as finished successfully.");
-      } else {
-        Alert.alert("Error", "Failed to mark order as finished.");
-      }
+        },
+      ]);
     } catch (error: any) {
-      console.error("Error marking order as finished:", error.response?.data);
-      Alert.alert(
-        "Error",
-        "An error occurred while marking the order as finished."
-      );
-    } finally {
-      setFinishLoading(false);
+      console.error("Error", error.response.data.Message);
+      Alert.alert("Error", "Unable to access user data");
     }
   };
 
+  const handleDetail = async () => {
+    router.push(`/(components)/order/OrderDetail?orderId=${item.id}`);
+  };
+
+  const renderOrderItem = ({ item: orderDetail }: any) => (
+    <View className="flex-row items-center mb-3 border-b border-gray-100 pb-3">
+      <Image
+        source={{ uri: orderDetail.imageUrl }}
+        className="w-16 h-16 rounded-lg"
+        resizeMode="contain"
+      />
+      <View className="ml-3 flex-1">
+        <Text
+          className="text-gray-700 font-semibold"
+          numberOfLines={2}
+          ellipsizeMode="tail"
+        >
+          {orderDetail.name}
+        </Text>
+        <Text className="text-gray-500">Quantity: {orderDetail.quantity}</Text>
+        <Text className="text-gray-500">
+          Price: {new Intl.NumberFormat("vi-VN").format(orderDetail.unitPrice)}{" "}
+          VND
+        </Text>
+      </View>
+    </View>
+  );
+
   return (
-    <View className="bg-white p-4 rounded-lg shadow-md mb-5 ml-5 mr-5">
-      <View className="flex-row justify-end mb-2">
-        <Text className="text-red-500 font-semibold">
-          Status: {item.status}
+    <View className="bg-white p-4 rounded-lg shadow-md mb-5 mx-5">
+      <View className="flex-row justify-between mb-4">
+        <Text className="text-gray-600 font-medium">
+          Order #{item.id.substring(0, 8)}...
+        </Text>
+        <Text
+          className={`font-semibold ${
+            item.status === "Finished"
+              ? "text-green-500"
+              : item.status === "Confirmed"
+              ? "text-blue-500"
+              : "text-red-500"
+          }`}
+        >
+          {item.status}
         </Text>
       </View>
 
-      {item.orderDetails.length > 0 && (
-        <View className="flex-row items-center">
-          <Image
-            source={{ uri: item.orderDetails[0].imageUrl }}
-            className="w-20 h-20 rounded-lg"
-            resizeMode="contain"
-          />
-          <View className="ml-3 flex-1">
-            <Text
-              className="text-gray-700 font-semibold"
-              numberOfLines={2}
-              ellipsizeMode="tail"
-            >
-              {item.orderDetails[0].name}
-            </Text>
-            <Text className="text-gray-500">
-              Quantity: {item.orderDetails[0].quantity}
-            </Text>
-            <Text className="text-gray-500">
-              Price:{" "}
-              {new Intl.NumberFormat("vi-VN").format(
-                item.orderDetails[0].unitPrice
-              )}{" "}
-              VND
-            </Text>
-          </View>
-        </View>
-      )}
+      <FlatList
+        data={item.orderDetails}
+        renderItem={renderOrderItem}
+        keyExtractor={(orderDetail, index) => `${item.id}-${index}`}
+        scrollEnabled={false}
+      />
 
       <View className="mt-3 items-end">
         <Text className="text-gray-700 font-semibold text-right">
@@ -155,69 +164,40 @@ export default function OrderItem({ item }: any) {
         </Text>
       </View>
 
-      {item.status === "PendingPayment" && (
-        <View className="flex-row justify-end mt-3">
-          <TouchableOpacity
-            className="bg-orange-500 px-3 py-1 rounded-md"
-            onPress={handleRePayment}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#FFF" />
-            ) : (
-              <Text className="text-white font-semibold">Re payment</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* {item.status !== "PendingPayment" && (
-        <View className="flex-row justify-end mt-3">
-          <TouchableOpacity
-            className="bg-orange-500 px-3 py-1 rounded-md"
-            onPress={handleDetail}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#FFF" />
-            ) : (
-              <Text className="text-white font-semibold">View Detail</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      )} */}
-
-      {item.status !== "PendingPayment" && (
-        <View className="flex-row justify-between mt-3 space-x-2">
-          <TouchableOpacity
-            className="bg-orange-500 px-3 py-1 rounded-md flex-1 items-center"
-            onPress={handleDetail}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#FFF" />
-            ) : (
-              <Text className="text-white font-semibold">View Detail</Text>
-            )}
-          </TouchableOpacity>
-
-          {/* {item.status === "Delivered" && (
+      <View className="flex-row justify-end mt-3">
+        {item.status === "PendingPayment" && (
+          <View className="flex-row justify-end mt-3">
             <TouchableOpacity
-              className="bg-green-500 px-3 py-1 rounded-md flex-1 items-center ml-2"
-              onPress={confirmFinishOrder}
-              disabled={finishLoading}
+              className="bg-red-500 px-4 py-2 rounded-md ml-2"
+              onPress={handleRePayment}
+              disabled={loading}
             >
-              {finishLoading ? (
+              {loading ? (
                 <ActivityIndicator size="small" color="#FFF" />
               ) : (
-                <Text className="text-white font-semibold">
-                  Mark as Finished
-                </Text>
+                <Text className="text-white font-semibold">Re-payment</Text>
               )}
             </TouchableOpacity>
-          )} */}
+          </View>
+        )}
+
+        {/* {item.status === "PendingPayment" && (
+          
+        )} */}
+        <View className="flex-row justify-end mt-3">
+          <TouchableOpacity
+            className="bg-orange-500 px-4 py-2 rounded-md ml-2"
+            onPress={handleDetail}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <Text className="text-white font-semibold">View Detail</Text>
+            )}
+          </TouchableOpacity>
         </View>
-      )}
+      </View>
     </View>
   );
 }

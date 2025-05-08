@@ -41,8 +41,7 @@ export default function AuctionInvoiceDetail() {
         setInvoice(response.data.data);
       } catch (error: any) {
         console.error("Error fetching invoice details:", error);
-        console.error("Error status:", error.response?.status);
-        console.error("Error details:", error.response?.data);
+        console.error("Error details:", error.response.data.Message);
       } finally {
         setLoading(false);
       }

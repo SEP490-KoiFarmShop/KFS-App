@@ -1,12 +1,14 @@
 import { View, Text, Image, TouchableOpacity } from "react-native";
 import React from "react";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 
 export default function OrderSuccess() {
   const router = useRouter();
+  const { orderId } = useLocalSearchParams();
+  console.log(orderId);
 
   const viewDetail = () => {
-    router.push("/");
+    router.push(`/(components)/order/OrderHome?orderStatus=Pending`);
   };
 
   const goHome = () => {
@@ -36,9 +38,7 @@ export default function OrderSuccess() {
             className="bg-orange-500 px-6 py-3 rounded-full flex-1 items-center ml-2"
             onPress={viewDetail}
           >
-            <Text className="text-white text-lg font-semibold">
-              Order Details
-            </Text>
+            <Text className="text-white text-lg font-semibold">Order List</Text>
           </TouchableOpacity>
 
           <TouchableOpacity

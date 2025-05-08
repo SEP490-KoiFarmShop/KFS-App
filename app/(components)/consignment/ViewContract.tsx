@@ -99,7 +99,7 @@ export default function ContractDetail() {
       console.log("Upload response:", response.data);
       return response.data.url;
     } catch (error: any) {
-      console.error("Lỗi upload ảnh:", error.response?.data || error.message);
+      console.error("Lỗi upload ảnh:", error.response.data.Message);
       Alert.alert("Lỗi", "Không thể lưu hợp đồng!");
       return null;
     }

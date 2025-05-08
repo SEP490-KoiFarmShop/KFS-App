@@ -123,18 +123,15 @@ export default function KoiFishAll() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
+    setSearchValue("");
+    setGender("");
+    setType("");
+    setVariety("");
+    setBreeder("");
+    fetchCart();
     setPage(1);
-    fetchKoisList(
-      1,
-      searchValue,
-      gender,
-      type,
-      variety,
-      breeder,
-      sortOrder,
-      true
-    );
-  }, [searchValue, gender, type, variety, breeder, sortOrder]);
+    fetchKoisList(1, "", "", "", "", "", sortOrder, true);
+  }, [sortOrder]);
 
   const fetchCart = async () => {
     try {
@@ -274,6 +271,7 @@ export default function KoiFishAll() {
           <SearchComponent
             initialSearchValue={searchValue}
             initialVariety={variety}
+            isRefreshing={refreshing}
             onSearch={(
               search: any,
               gender: any,

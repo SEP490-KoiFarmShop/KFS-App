@@ -1,6 +1,6 @@
 import GlobalApi from "@/utils/GlobalApi";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { Feather } from "@expo/vector-icons";
 import { ActivityIndicator, TextInput } from "react-native-paper";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SignalR from "@microsoft/signalr";
 
 interface Product {
   id: number;
@@ -84,6 +85,14 @@ export default function BidScreen() {
   const [loading, setLoading] = useState(true);
   const [bidAmount, setBidAmount] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Added for countdown timer
+  const [timeLeft, setTimeLeft] = useState<string | null>(null);
+  const [isAuctionEnded, setIsAuctionEnded] = useState<boolean>(false);
+  // Added for SignalR connection
+  const connectionRef = useRef<SignalR.HubConnection | null>(null);
+  const [userId, setUserId] = useState<any | null>(null);
+  // Track processed bid IDs to prevent duplicates
+  const processedBidIdsRef = useRef<Set<number>>(new Set());
 
   const getInitialBidAmount = () => {
     if (!lotData) return 0;
@@ -100,6 +109,127 @@ export default function BidScreen() {
   };
 
   useEffect(() => {
+    const getUserId = async () => {
+      try {
+        const userData = await AsyncStorage.getItem("userData");
+        if (!userData) {
+          return;
+        }
+
+        const parsedToken = JSON.parse(userData);
+        setUserId(parsedToken?.id);
+      } catch (error) {
+        console.error("Failed to get user ID:", error);
+      }
+    };
+
+    getUserId();
+  }, []);
+
+  useEffect(() => {
+    const connectToSignalR = async () => {
+      // Check if we already have a connection
+      if (
+        connectionRef.current?.state === SignalR.HubConnectionState.Connected
+      ) {
+        console.log("Already connected to SignalR");
+        return;
+      }
+
+      try {
+        const userData = await AsyncStorage.getItem("userData");
+        if (!userData) {
+          return;
+        }
+
+        const parsedToken = JSON.parse(userData);
+        const jwtToken = parsedToken?.accessToken;
+
+        // Create a new connection
+        const newConnection = new SignalR.HubConnectionBuilder()
+          .withUrl(`https://kfsapis.azurewebsites.net/lotHub?lotId=${lotId}`, {
+            accessTokenFactory: () => jwtToken,
+          })
+          .withAutomaticReconnect()
+          .build();
+
+        // Remove any existing event handlers before adding new ones
+        newConnection.off("NewBid");
+
+        // Add event handler for new bids
+        newConnection.on("NewBid", (bidData) => {
+          console.log("Received NewBid:", bidData);
+
+          // Check if we've already processed this bid
+          if (bidData.bidId && processedBidIdsRef.current.has(bidData.bidId)) {
+            console.log(`Skipping duplicate bid with ID: ${bidData.bidId}`);
+            return;
+          }
+
+          // Add this bid ID to our processed set
+          if (bidData.bidId) {
+            processedBidIdsRef.current.add(bidData.bidId);
+          }
+
+          setLotData((prevLotData: any) => {
+            if (!prevLotData) return null;
+
+            // Check if this bid is already in the list
+            const bidExists = prevLotData.bids.some(
+              (bid: any) => bid.id === bidData.bidId
+            );
+            if (bidExists) {
+              console.log(
+                `Bid with ID ${bidData.bidId} already exists in state`
+              );
+              return prevLotData;
+            }
+
+            // Create the new bid object
+            const newBid = {
+              id: bidData.bidId,
+              amount: bidData.amount,
+              createdAt: bidData.createdAt,
+              customerId: bidData.customerId,
+              customerName: bidData.customerName,
+              isYourBid: bidData.customerId === userId,
+            };
+
+            return {
+              ...prevLotData,
+              currentHighestBid: bidData.amount,
+              expectedEndTime: bidData.endTime,
+              remainingTime: bidData.timeRemaining,
+              bids: [newBid, ...prevLotData.bids],
+            };
+          });
+        });
+
+        await newConnection.start();
+        console.log("Connected to SignalR");
+        connectionRef.current = newConnection;
+      } catch (error) {
+        console.error("SignalR connection error:", error);
+      }
+    };
+
+    connectToSignalR();
+
+    return () => {
+      if (connectionRef.current) {
+        connectionRef.current.off("NewBid"); // Remove event handler
+        connectionRef.current
+          .stop()
+          .then(() => console.log("SignalR connection stopped."))
+          .catch((err) =>
+            console.error("Error stopping SignalR connection:", err)
+          );
+        connectionRef.current = null;
+      }
+    };
+  }, [lotId, userId]);
+
+  useEffect(() => {
     const fetchLotDetails = async () => {
       try {
         const response = await GlobalApi.getLotById(lotId);
@@ -107,6 +237,13 @@ export default function BidScreen() {
         if (response.data.product) {
           const product = response.data.product;
           setKoisById(product);
+        }
+
+        // Initialize processed bid IDs with existing bids
+        if (response.data.bids && response.data.bids.length > 0) {
+          processedBidIdsRef.current = new Set(
+            response.data.bids.map((bid: any) => bid.id)
+          );
         }
       } catch (error) {
         console.error("Error fetching lot details:", error);
@@ -119,6 +256,35 @@ export default function BidScreen() {
       fetchLotDetails();
     }
   }, [lotId]);
+
+  useEffect(() => {
+    if (!lotData?.expectedEndTime) return;
+
+    const calculateTime = () => {
+      const now = new Date();
+      const endTime = new Date(lotData.expectedEndTime);
+      endTime.setHours(endTime.getHours() - 7);
+      const diff = endTime.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        setTimeLeft("Time out");
+        setIsAuctionEnded(true);
+        return;
+      }
+
+      setIsAuctionEnded(false);
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+    };
+
+    calculateTime();
+
+    const interval = setInterval(calculateTime, 1000);
+
+    return () => clearInterval(interval);
+  }, [lotData?.expectedEndTime]);
 
   if (loading) {
     return (
@@ -151,15 +317,12 @@ export default function BidScreen() {
   };
 
   const placeBid = async () => {
-    // Prevent multiple submissions
-    if (isSubmitting) {
+    if (isSubmitting || isAuctionEnded) {
       return;
     }
 
-    // Get the minimum bid amount
     const minBidAmount = getMinBidAmount();
 
-    // Validate the bid amount
     const numericBidAmount =
       parseInt(bidAmount.replace(/\D/g, ""), 10) || minBidAmount;
 
@@ -171,7 +334,6 @@ export default function BidScreen() {
       return;
     }
 
-    // Check if bid exceeds buy now price and adjust it
     let finalBidAmount = numericBidAmount;
     if (lotData?.buyNowPrice && numericBidAmount > lotData.buyNowPrice) {
       finalBidAmount = lotData.buyNowPrice;
@@ -183,12 +345,12 @@ export default function BidScreen() {
       );
     }
 
-    setIsSubmitting(true); // Set submitting state to true
+    setIsSubmitting(true);
 
     try {
       const userData = await AsyncStorage.getItem("userData");
       if (!userData) {
-        setIsSubmitting(false); // Reset submitting state
+        setIsSubmitting(false);
         router.push("/(auth)/LoginScreen");
         return;
       }
@@ -215,7 +377,6 @@ export default function BidScreen() {
         }
       );
 
-      // Determine if this was a "Buy Now" scenario
       const isBuyNow = finalBidAmount === lotData?.buyNowPrice;
 
       Alert.alert(
@@ -225,97 +386,18 @@ export default function BidScreen() {
           : "Your bid has been placed successfully!"
       );
 
-      // Update the local state with the new bid
-      setLotData((prevData) => {
-        if (!prevData) return null;
-        return {
-          ...prevData,
-          currentHighestBid: finalBidAmount,
-          currentHighestBidderId: parsedToken?.id,
-          youAreCurrentHisghestBidder: true,
-        };
-      });
+      // The bid update will come through SignalR instead of updating state directly
+      // This ensures all users see the same data
 
       router.push(`/(components)/LotDetailScreen?lotId=${lotId}`);
-    } catch (error) {
-      console.error("Error placing bid:", error);
-      Alert.alert("Error", "Failed to place bid. Please try again.");
-    } finally {
-      setIsSubmitting(false); // Reset submitting state regardless of outcome
-    }
-  };
-
-  const handleBuyNow = async () => {
-    if (isSubmitting) {
-      return; // Prevent action if already submitting
-    }
-
-    try {
-      const userData = await AsyncStorage.getItem("userData");
-      if (!userData) {
-        router.push("/(auth)/LoginScreen");
-        return;
-      }
-
-      const parsedToken = JSON.parse(userData);
-      const jwtToken = parsedToken?.accessToken;
-
-      Alert.alert(
-        "Buy Now",
-        `Are you sure you want to buy this item now for ${formatCurrency(
-          lotData?.buyNowPrice
-        )}?`,
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Buy Now",
-            onPress: async () => {
-              try {
-                setIsSubmitting(true); // Set submitting state to true
-
-                const response = await axios.post(
-                  "https://kfsapis.azurewebsites.net/api/v1/auctions/lot/bid",
-                  {
-                    lotId: lotId,
-                    amount: lotData?.buyNowPrice,
-                  },
-                  {
-                    headers: {
-                      Authorization: `Bearer ${jwtToken}`,
-                      "Content-Type": "application/json",
-                    },
-                  }
-                );
-
-                Alert.alert(
-                  "Success",
-                  "Congratulations! You have successfully purchased this item.",
-                  [
-                    {
-                      text: "OK",
-                      onPress: () =>
-                        router.push(
-                          `/(components)/LotDetailScreen?lotId=${lotId}`
-                        ),
-                    },
-                  ]
-                );
-              } catch (error) {
-                console.error("Error buying now:", error);
-                Alert.alert(
-                  "Error",
-                  "Failed to complete purchase. Please try again."
-                );
-              } finally {
-                setIsSubmitting(false); // Reset submitting state
-              }
-            },
-          },
-        ]
-      );
     } catch (error: any) {
-      console.error("Error in buy now process:", error.response?.data.Message);
-      Alert.alert("Error", "Failed to process your request. Please try again.");
+      console.error(
+        "Error placing bid:",
+        error.response?.data?.Message || error
+      );
+      Alert.alert(error.response?.data?.Message || "Error placing bid");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -398,6 +480,18 @@ export default function BidScreen() {
             {formatVNTime(lotData?.expectedEndTime)}
           </Text>
 
+          {/* Countdown Timer Display */}
+          {lotData?.status === "Auctioning" && (
+            <View className="bg-orange-50 p-4 rounded-lg shadow-sm mb-4">
+              <Text className="text-gray-700 text-lg">
+                ⌛ Time left:{" "}
+                <Text className="font-semibold text-red-500 text-2xl">
+                  {timeLeft}
+                </Text>
+              </Text>
+            </View>
+          )}
+
           <View className="bg-white p-4 rounded-lg shadow-sm mb-4">
             <Text className="text-sm text-gray-600">
               Estimated value: {formatCurrency(koisById?.price)}
@@ -419,9 +513,9 @@ export default function BidScreen() {
           {lotData?.bids && lotData.bids.length > 0 ? (
             <View className="mb-4">
               <Text className="text-lg font-semibold mb-2">Recent Bids</Text>
-              {lotData?.bids.slice(0, 2).map((bid, index) => (
+              {lotData?.bids.slice(0, 5).map((bid, index) => (
                 <View
-                  key={index}
+                  key={bid.id || index}
                   className="border border-gray-300 rounded-lg p-3 flex-row justify-between items-center mb-2 bg-white"
                 >
                   <Text className="text-sm text-gray-600">
@@ -429,7 +523,11 @@ export default function BidScreen() {
                   </Text>
                   <View>
                     <Text className="text-gray-600">{bid.customerName}</Text>
-                    <Text className="text-lg font-semibold text-gray-900">
+                    <Text
+                      className={`text-lg font-semibold ${
+                        bid.isYourBid ? "text-green-600" : "text-gray-900"
+                      }`}
+                    >
                       {formatCurrency(bid.amount)}
                     </Text>
                   </View>
@@ -465,16 +563,18 @@ export default function BidScreen() {
               activeOutlineColor="#FF6600"
               style={{ backgroundColor: "white", marginBottom: 10 }}
               placeholder={`Min bid : ${formatCurrency(getMinBidAmount())}`}
-              disabled={isSubmitting} // Disable input while submitting
+              disabled={isSubmitting || isAuctionEnded}
             />
 
             <View className="flex-row space-x-2">
               <TouchableOpacity
                 className={`flex-1 p-4 rounded-lg items-center ${
-                  isSubmitting ? "bg-gray-400" : "bg-orange-500"
+                  isSubmitting || isAuctionEnded
+                    ? "bg-gray-400"
+                    : "bg-orange-500"
                 }`}
                 onPress={placeBid}
-                disabled={isSubmitting} // Disable button while submitting
+                disabled={isSubmitting || isAuctionEnded}
               >
                 {isSubmitting ? (
                   <View className="flex-row items-center">
@@ -483,29 +583,16 @@ export default function BidScreen() {
                       Processing...
                     </Text>
                   </View>
+                ) : isAuctionEnded ? (
+                  <Text className="text-white font-bold text-lg">
+                    Auction Ended
+                  </Text>
                 ) : (
                   <Text className="text-white font-bold text-lg">
                     Place Bid
                   </Text>
                 )}
               </TouchableOpacity>
-
-              {/* <TouchableOpacity
-                className={`flex-1 p-4 rounded-lg items-center ml-2 ${
-                  isSubmitting ? "bg-gray-400" : "bg-green-600"
-                }`}
-                onPress={handleBuyNow}
-                disabled={isSubmitting} // Disable button while submitting
-              >
-                {isSubmitting ? (
-                  <View className="flex-row items-center">
-                    <ActivityIndicator size="small" color="white" />
-                    <Text className="text-white font-bold text-lg ml-2">Processing...</Text>
-                  </View>
-                ) : (
-                  <Text className="text-white font-bold text-lg">Buy Now</Text>
-                )}
-              </TouchableOpacity> */}
             </View>
           </View>
         </ScrollView>
